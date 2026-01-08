@@ -1,11 +1,16 @@
 {
   "name": "ralph-cli-claude",
   "version": "0.1.0",
-  "description": "AI-driven development automation CLI using Claude",
+  "description": "AI-driven development automation CLI for Claude Code",
   "type": "module",
   "bin": {
     "ralph": "./dist/index.js"
   },
+  "main": "./dist/index.js",
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "npx tsx src/index.ts",
@@ -23,11 +28,25 @@
   "keywords": [
     "cli",
     "claude",
+    "claude-code",
     "ai",
     "automation",
-    "prd"
+    "prd",
+    "anthropic",
+    "llm",
+    "developer-tools",
+    "devtools"
   ],
+  "author": "",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "homepage": "",
+  "bugs": {
+    "url": ""
+  },
   "engines": {
     "node": ">=18.0.0"
   }
