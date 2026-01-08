@@ -101,9 +101,13 @@ ENV DEVCONTAINER=true
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 ENV CLAUDE_CONFIG_DIR="/home/node/.claude"
 
-# Add common aliases
+# Add common aliases and custom prompt
 RUN echo 'alias ll="ls -la"' >> /etc/bash.bashrc && \\
-    echo 'alias ll="ls -la"' >> /etc/zsh/zshrc
+    echo 'alias ll="ls -la"' >> /etc/zsh/zshrc && \\
+    # Bash prompt: [ralph] user@dir$
+    echo 'PS1="\\[\\033[1;35m\\][ralph]\\[\\033[0m\\] \\[\\033[1;32m\\]\\u\\[\\033[0m\\]@\\[\\033[1;34m\\]\\w\\[\\033[0m\\]\\$ "' >> /etc/bash.bashrc && \\
+    # Zsh prompt: [ralph] user@dir$
+    echo 'PROMPT="%F{magenta}[ralph]%f %F{green}%n%f@%F{blue}%~%f\\$ "' >> /etc/zsh/zshrc
 
 # Switch to non-root user
 USER node
