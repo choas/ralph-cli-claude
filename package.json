@@ -37,15 +37,15 @@
     "developer-tools",
     "devtools"
   ],
-  "author": "",
+  "author": "Lars Gregori",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "git+https://github.com/choas/ralph-cli-claude.git"
   },
-  "homepage": "",
+  "homepage": "https://github.com/choas/ralph-cli-claude#readme",
   "bugs": {
-    "url": ""
+    "url": "https://github.com/choas/ralph-cli-claude/issues"
   },
   "engines": {
     "node": ">=18.0.0"
