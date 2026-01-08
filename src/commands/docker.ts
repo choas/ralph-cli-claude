@@ -101,6 +101,10 @@ ENV DEVCONTAINER=true
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 ENV CLAUDE_CONFIG_DIR="/home/node/.claude"
 
+# Add common aliases
+RUN echo 'alias ll="ls -la"' >> /etc/bash.bashrc && \\
+    echo 'alias ll="ls -la"' >> /etc/zsh/zshrc
+
 # Switch to non-root user
 USER node
 WORKDIR /workspace
@@ -201,7 +205,8 @@ services:
       context: .
       dockerfile: Dockerfile
     volumes:
-      - ..:/workspace
+      # Mount project root (two levels up from .ralph/docker/)
+      - ../..:/workspace
       # Mount host's ~/.claude for Pro/Max OAuth credentials
       - \${HOME}/.claude:/home/node/.claude
       - ${imageName}-bash-history:/commandhistory
