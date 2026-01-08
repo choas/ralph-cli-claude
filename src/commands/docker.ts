@@ -102,8 +102,8 @@ RUN npm install -g @anthropic-ai/claude-code@\${CLAUDE_CODE_VERSION}
 # Install ralph-cli
 RUN npm install -g ralph-cli || echo "ralph-cli not yet published, will use local"
 ${languageSnippet}
-# Setup non-root user with limited sudo (apt-get only for safety)
-RUN echo "node ALL=(ALL) NOPASSWD: /usr/bin/apt-get, /usr/bin/apt, /usr/local/bin/init-firewall.sh" >> /etc/sudoers.d/node-sudo
+# Setup sudo only for firewall script (no general sudo for security)
+RUN echo "node ALL=(ALL) NOPASSWD: /usr/local/bin/init-firewall.sh" >> /etc/sudoers.d/node-firewall
 
 # Create directories
 RUN mkdir -p /workspace && chown node:node /workspace
@@ -373,7 +373,7 @@ FILES GENERATED:
 
 AUTHENTICATION:
   Pro/Max users: Your ~/.claude credentials are mounted automatically.
-  API key users: export ANTHROPIC_API_KEY=sk-... before running.
+  API key users: Uncomment ANTHROPIC_API_KEY in docker-compose.yml.
 
 EXAMPLES:
   ralph docker                      # Generate files
@@ -385,6 +385,18 @@ EXAMPLES:
 
   # Run ralph automation in container:
   docker compose run --rm ralph ralph once
+
+INSTALLING PACKAGES (works with Docker & Podman):
+  # 1. Run as root to install packages:
+  docker compose run -u root ralph apt-get update
+  docker compose run -u root ralph apt-get install <package>
+
+  # 2. Or commit changes to a new image:
+  docker run -it --name temp -u root <image> bash
+  # inside: apt-get update && apt-get install <package>
+  # exit, then:
+  docker commit temp <image>:custom
+  docker rm temp
 `);
     return;
   }
