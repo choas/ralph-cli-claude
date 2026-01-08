@@ -10,6 +10,7 @@ COMMANDS:
   run <n>           Run n automation iterations
   prd <subcommand>  Manage PRD entries
   scripts           Generate shell scripts (for sandboxed environments)
+  docker            Generate Docker sandbox environment
   help              Show this help message
 
 PRD SUBCOMMANDS:
@@ -26,6 +27,9 @@ EXAMPLES:
   ralph prd list             # Show all entries
   ralph prd status           # Show completion summary
   ralph scripts              # Generate ralph.sh and ralph-once.sh
+  ralph docker               # Generate Dockerfile for sandboxed env
+  ralph docker --build       # Build Docker image
+  ralph docker --run         # Run container interactively
 
 CONFIGURATION:
   After running 'ralph init', you'll have:

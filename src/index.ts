@@ -6,6 +6,7 @@ import { once } from "./commands/once.js";
 import { run } from "./commands/run.js";
 import { prd } from "./commands/prd.js";
 import { scripts } from "./commands/scripts.js";
+import { docker } from "./commands/docker.js";
 
 const commands: Record<string, (args: string[]) => Promise<void> | void> = {
   help,
@@ -14,6 +15,7 @@ const commands: Record<string, (args: string[]) => Promise<void> | void> = {
   run,
   prd,
   scripts,
+  docker,
 };
 
 async function main() {
