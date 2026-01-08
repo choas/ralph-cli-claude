@@ -1,0 +1,34 @@
+{
+  "name": "ralph-cli",
+  "version": "0.1.0",
+  "description": "AI-driven development automation CLI using Claude",
+  "type": "module",
+  "bin": {
+    "ralph": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "npx tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "readline": "^1.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  },
+  "keywords": [
+    "cli",
+    "claude",
+    "ai",
+    "automation",
+    "prd"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
