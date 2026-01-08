@@ -94,6 +94,7 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
 # Set custom prompt for node user (after oh-my-zsh to avoid override)
 RUN cp -r /root/.oh-my-zsh /home/node/.oh-my-zsh && chown -R node:node /home/node/.oh-my-zsh && \\
     cp /root/.zshrc /home/node/.zshrc && chown node:node /home/node/.zshrc && \\
+    sed -i 's|/root/.oh-my-zsh|/home/node/.oh-my-zsh|g' /home/node/.zshrc && \\
     echo 'PROMPT="%F{magenta}[ralph]%f %F{green}node%f@%F{blue}%~%f\\$ "' >> /home/node/.zshrc
 
 # Install Claude Code CLI
