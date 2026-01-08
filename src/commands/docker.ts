@@ -95,7 +95,7 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
 RUN cp -r /root/.oh-my-zsh /home/node/.oh-my-zsh && chown -R node:node /home/node/.oh-my-zsh && \\
     cp /root/.zshrc /home/node/.zshrc && chown node:node /home/node/.zshrc && \\
     sed -i 's|/root/.oh-my-zsh|/home/node/.oh-my-zsh|g' /home/node/.zshrc && \\
-    echo 'PROMPT="%F{magenta}[ralph]%f %F{green}node%f@%F{blue}%~%f\\$ "' >> /home/node/.zshrc
+    echo 'PROMPT="%K{yellow}%F{black}[ralph]%f%k%K{yellow}%F{black}%d%f%k\\$ "' >> /home/node/.zshrc
 
 # Install Claude Code CLI
 RUN npm install -g @anthropic-ai/claude-code@\${CLAUDE_CODE_VERSION}
@@ -124,7 +124,7 @@ ENV EDITOR=nano
 
 # Add bash aliases and prompt (fallback if using bash)
 RUN echo 'alias ll="ls -la"' >> /etc/bash.bashrc && \\
-    echo 'PS1="\\[\\033[1;35m\\][ralph]\\[\\033[0m\\] \\[\\033[1;32m\\]\\u\\[\\033[0m\\]@\\[\\033[1;34m\\]\\w\\[\\033[0m\\]\\$ "' >> /etc/bash.bashrc
+    echo 'PS1="\\[\\033[43;30m\\][ralph]\\w\\[\\033[0m\\]\\$ "' >> /etc/bash.bashrc
 
 # Switch to non-root user
 USER node
