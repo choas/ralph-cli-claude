@@ -53,6 +53,7 @@ FROM node:20-bookworm
 ARG DEBIAN_FRONTEND=noninteractive
 ARG TZ=UTC
 ARG CLAUDE_CODE_VERSION="latest"
+ARG ZSH_IN_DOCKER_VERSION="1.2.1"
 
 # Set timezone
 ENV TZ=\${TZ}
@@ -72,12 +73,23 @@ RUN apt-get update && apt-get install -y \\
     unzip \\
     gnupg2 \\
     jq \\
+    fzf \\
     iptables \\
     ipset \\
     iproute2 \\
     dnsutils \\
     zsh \\
     && rm -rf /var/lib/apt/lists/*
+
+# Setup zsh with oh-my-zsh and plugins
+RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/v\${ZSH_IN_DOCKER_VERSION}/zsh-in-docker.sh)" -- \\
+    -p git \\
+    -p fzf \\
+    -a "source /usr/share/doc/fzf/examples/key-bindings.zsh 2>/dev/null || true" \\
+    -a "source /usr/share/doc/fzf/examples/completion.zsh 2>/dev/null || true" \\
+    -a "export HISTFILE=/commandhistory/.zsh_history" \\
+    -a 'export PROMPT="%F{magenta}[ralph]%f %F{green}%n%f@%F{blue}%~%f\\$ "' \\
+    -a 'alias ll="ls -la"'
 
 # Install Claude Code CLI
 RUN npm install -g @anthropic-ai/claude-code@\${CLAUDE_CODE_VERSION}
@@ -88,9 +100,10 @@ ${languageSnippet}
 # Setup non-root user
 RUN echo "node ALL=(ALL) NOPASSWD: /usr/local/bin/init-firewall.sh" >> /etc/sudoers.d/node-firewall
 
-# Create workspace directory
+# Create directories
 RUN mkdir -p /workspace && chown node:node /workspace
 RUN mkdir -p /home/node/.claude && chown node:node /home/node/.claude
+RUN mkdir -p /commandhistory && chown node:node /commandhistory
 
 # Copy firewall script
 COPY init-firewall.sh /usr/local/bin/init-firewall.sh
@@ -100,21 +113,19 @@ RUN chmod +x /usr/local/bin/init-firewall.sh
 ENV DEVCONTAINER=true
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 ENV CLAUDE_CONFIG_DIR="/home/node/.claude"
+ENV SHELL=/bin/zsh
+ENV EDITOR=nano
 
-# Add common aliases and custom prompt
+# Add bash aliases and prompt (fallback if using bash)
 RUN echo 'alias ll="ls -la"' >> /etc/bash.bashrc && \\
-    echo 'alias ll="ls -la"' >> /etc/zsh/zshrc && \\
-    # Bash prompt: [ralph] user@dir$
-    echo 'PS1="\\[\\033[1;35m\\][ralph]\\[\\033[0m\\] \\[\\033[1;32m\\]\\u\\[\\033[0m\\]@\\[\\033[1;34m\\]\\w\\[\\033[0m\\]\\$ "' >> /etc/bash.bashrc && \\
-    # Zsh prompt: [ralph] user@dir$
-    echo 'PROMPT="%F{magenta}[ralph]%f %F{green}%n%f@%F{blue}%~%f\\$ "' >> /etc/zsh/zshrc
+    echo 'PS1="\\[\\033[1;35m\\][ralph]\\[\\033[0m\\] \\[\\033[1;32m\\]\\u\\[\\033[0m\\]@\\[\\033[1;34m\\]\\w\\[\\033[0m\\]\\$ "' >> /etc/bash.bashrc
 
 # Switch to non-root user
 USER node
 WORKDIR /workspace
 
-# Default command
-CMD ["bash"]
+# Default to zsh
+CMD ["zsh"]
 `;
 }
 
@@ -213,20 +224,20 @@ services:
       - ../..:/workspace
       # Mount host's ~/.claude for Pro/Max OAuth credentials
       - \${HOME}/.claude:/home/node/.claude
-      - ${imageName}-bash-history:/commandhistory
-    environment:
-      # For API key users (optional if using Pro/Max OAuth)
-      - ANTHROPIC_API_KEY=\${ANTHROPIC_API_KEY:-}
+      - ${imageName}-history:/commandhistory
+    # Uncomment to use API key instead of OAuth:
+    # environment:
+    #   - ANTHROPIC_API_KEY=\${ANTHROPIC_API_KEY}
     working_dir: /workspace
     stdin_open: true
     tty: true
     cap_add:
       - NET_ADMIN  # Required for firewall
     # Uncomment to enable firewall sandboxing:
-    # command: bash -c "sudo /usr/local/bin/init-firewall.sh && bash"
+    # command: bash -c "sudo /usr/local/bin/init-firewall.sh && zsh"
 
 volumes:
-  ${imageName}-bash-history:
+  ${imageName}-history:
 `;
 }
 
