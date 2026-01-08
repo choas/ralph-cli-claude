@@ -1,5 +1,5 @@
 import { existsSync, writeFileSync, mkdirSync } from "fs";
-import { join } from "path";
+import { join, basename } from "path";
 import { LANGUAGES, generatePrompt, DEFAULT_PRD, DEFAULT_PROGRESS, type LanguageConfig } from "../templates/prompts.js";
 import { promptSelect, promptConfirm, promptInput } from "../utils/prompt.js";
 
@@ -51,11 +51,16 @@ export async function init(_args: string[]): Promise<void> {
     testCommand,
   };
 
+  // Generate image name from directory name
+  const projectName = basename(cwd).toLowerCase().replace(/[^a-z0-9-]/g, "-");
+  const imageName = `ralph-${projectName}`;
+
   // Write config file
   const configData = {
     language: selectedKey,
     checkCommand: finalConfig.checkCommand,
     testCommand: finalConfig.testCommand,
+    imageName,
   };
 
   const configPath = join(ralphDir, CONFIG_FILE);
