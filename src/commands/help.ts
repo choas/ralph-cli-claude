@@ -9,6 +9,7 @@ COMMANDS:
   once              Run a single automation iteration
   run <n>           Run n automation iterations
   prd <subcommand>  Manage PRD entries
+  scripts           Generate shell scripts (for sandboxed environments)
   help              Show this help message
 
 PRD SUBCOMMANDS:
@@ -24,6 +25,7 @@ EXAMPLES:
   ralph prd add              # Add new PRD entry
   ralph prd list             # Show all entries
   ralph prd status           # Show completion summary
+  ralph scripts              # Generate ralph.sh and ralph-once.sh
 
 CONFIGURATION:
   After running 'ralph init', you'll have:

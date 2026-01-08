@@ -56,10 +56,22 @@ export async function init(_args: string[]): Promise<void> {
   writeFileSync(join(cwd, CONFIG_FILE), JSON.stringify(configData, null, 2) + "\n");
   console.log(`\nCreated ${CONFIG_FILE}`);
 
-  // Write prompt file
+  // Write prompt file (ask if exists)
   const prompt = generatePrompt(finalConfig);
-  writeFileSync(join(cwd, PROMPT_FILE), prompt + "\n");
-  console.log(`Created ${PROMPT_FILE}`);
+  const promptPath = join(cwd, PROMPT_FILE);
+
+  if (existsSync(promptPath)) {
+    const overwritePrompt = await promptConfirm(`${PROMPT_FILE} already exists. Overwrite?`);
+    if (overwritePrompt) {
+      writeFileSync(promptPath, prompt + "\n");
+      console.log(`Updated ${PROMPT_FILE}`);
+    } else {
+      console.log(`Skipped ${PROMPT_FILE}`);
+    }
+  } else {
+    writeFileSync(promptPath, prompt + "\n");
+    console.log(`Created ${PROMPT_FILE}`);
+  }
 
   // Create PRD if not exists
   if (!existsSync(join(cwd, PRD_FILE))) {
