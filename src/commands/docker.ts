@@ -81,15 +81,20 @@ RUN apt-get update && apt-get install -y \\
     zsh \\
     && rm -rf /var/lib/apt/lists/*
 
-# Setup zsh with oh-my-zsh and plugins
+# Setup zsh with oh-my-zsh and plugins (no theme, we set custom prompt)
 RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/v\${ZSH_IN_DOCKER_VERSION}/zsh-in-docker.sh)" -- \\
+    -t "" \\
     -p git \\
     -p fzf \\
     -a "source /usr/share/doc/fzf/examples/key-bindings.zsh 2>/dev/null || true" \\
     -a "source /usr/share/doc/fzf/examples/completion.zsh 2>/dev/null || true" \\
     -a "export HISTFILE=/commandhistory/.zsh_history" \\
-    -a 'export PROMPT="%F{magenta}[ralph]%f %F{green}%n%f@%F{blue}%~%f\\$ "' \\
     -a 'alias ll="ls -la"'
+
+# Set custom prompt for node user (after oh-my-zsh to avoid override)
+RUN cp -r /root/.oh-my-zsh /home/node/.oh-my-zsh && chown -R node:node /home/node/.oh-my-zsh && \\
+    cp /root/.zshrc /home/node/.zshrc && chown node:node /home/node/.zshrc && \\
+    echo 'PROMPT="%F{magenta}[ralph]%f %F{green}node%f@%F{blue}%~%f\\$ "' >> /home/node/.zshrc
 
 # Install Claude Code CLI
 RUN npm install -g @anthropic-ai/claude-code@\${CLAUDE_CODE_VERSION}
@@ -97,8 +102,8 @@ RUN npm install -g @anthropic-ai/claude-code@\${CLAUDE_CODE_VERSION}
 # Install ralph-cli
 RUN npm install -g ralph-cli || echo "ralph-cli not yet published, will use local"
 ${languageSnippet}
-# Setup non-root user with full sudo access
-RUN echo "node ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/node-sudo
+# Setup non-root user with limited sudo (apt-get only for safety)
+RUN echo "node ALL=(ALL) NOPASSWD: /usr/bin/apt-get, /usr/bin/apt, /usr/local/bin/init-firewall.sh" >> /etc/sudoers.d/node-sudo
 
 # Create directories
 RUN mkdir -p /workspace && chown node:node /workspace
