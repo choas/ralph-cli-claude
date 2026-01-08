@@ -7,17 +7,21 @@ export interface RalphConfig {
   testCommand: string;
 }
 
-const CONFIG_FILE = "ralph.config.json";
-const PROMPT_FILE = "ralph-prompt.md";
+const RALPH_DIR = ".ralph";
+const CONFIG_FILE = "config.json";
+const PROMPT_FILE = "prompt.md";
 const PRD_FILE = "prd.json";
 const PROGRESS_FILE = "progress.txt";
 
+export function getRalphDir(): string {
+  return join(process.cwd(), RALPH_DIR);
+}
+
 export function loadConfig(): RalphConfig {
-  const cwd = process.cwd();
-  const configPath = join(cwd, CONFIG_FILE);
+  const configPath = join(getRalphDir(), CONFIG_FILE);
 
   if (!existsSync(configPath)) {
-    throw new Error("ralph.config.json not found. Run 'ralph init' first.");
+    throw new Error(".ralph/config.json not found. Run 'ralph init' first.");
   }
 
   const content = readFileSync(configPath, "utf-8");
@@ -25,34 +29,38 @@ export function loadConfig(): RalphConfig {
 }
 
 export function loadPrompt(): string {
-  const cwd = process.cwd();
-  const promptPath = join(cwd, PROMPT_FILE);
+  const promptPath = join(getRalphDir(), PROMPT_FILE);
 
   if (!existsSync(promptPath)) {
-    throw new Error("ralph-prompt.md not found. Run 'ralph init' first.");
+    throw new Error(".ralph/prompt.md not found. Run 'ralph init' first.");
   }
 
   return readFileSync(promptPath, "utf-8");
 }
 
 export function checkFilesExist(): void {
-  const cwd = process.cwd();
+  const ralphDir = getRalphDir();
+
+  if (!existsSync(ralphDir)) {
+    throw new Error(".ralph/ directory not found. Run 'ralph init' first.");
+  }
 
   const requiredFiles = [CONFIG_FILE, PROMPT_FILE, PRD_FILE, PROGRESS_FILE];
 
   for (const file of requiredFiles) {
-    if (!existsSync(join(cwd, file))) {
-      throw new Error(`${file} not found. Run 'ralph init' first.`);
+    if (!existsSync(join(ralphDir, file))) {
+      throw new Error(`.ralph/${file} not found. Run 'ralph init' first.`);
     }
   }
 }
 
 export function getPaths() {
-  const cwd = process.cwd();
+  const ralphDir = getRalphDir();
   return {
-    config: join(cwd, CONFIG_FILE),
-    prompt: join(cwd, PROMPT_FILE),
-    prd: join(cwd, PRD_FILE),
-    progress: join(cwd, PROGRESS_FILE),
+    dir: ralphDir,
+    config: join(ralphDir, CONFIG_FILE),
+    prompt: join(ralphDir, PROMPT_FILE),
+    prd: join(ralphDir, PRD_FILE),
+    progress: join(ralphDir, PROGRESS_FILE),
   };
 }

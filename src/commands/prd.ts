@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import { promptInput, promptSelect } from "../utils/prompt.js";
+import { getRalphDir } from "../utils/config.js";
 
 interface PrdEntry {
   category: string;
@@ -13,13 +14,13 @@ const PRD_FILE = "prd.json";
 const CATEGORIES = ["ui", "feature", "bugfix", "setup", "development", "testing", "docs"];
 
 function getPrdPath(): string {
-  return join(process.cwd(), PRD_FILE);
+  return join(getRalphDir(), PRD_FILE);
 }
 
 function loadPrd(): PrdEntry[] {
   const path = getPrdPath();
   if (!existsSync(path)) {
-    throw new Error("prd.json not found. Run 'ralph init' first.");
+    throw new Error(".ralph/prd.json not found. Run 'ralph init' first.");
   }
   return JSON.parse(readFileSync(path, "utf-8"));
 }

@@ -1,25 +1,30 @@
-import { existsSync, writeFileSync } from "fs";
+import { existsSync, writeFileSync, mkdirSync } from "fs";
 import { join } from "path";
 import { LANGUAGES, generatePrompt, DEFAULT_PRD, DEFAULT_PROGRESS, type LanguageConfig } from "../templates/prompts.js";
 import { promptSelect, promptConfirm, promptInput } from "../utils/prompt.js";
 
-const CONFIG_FILE = "ralph.config.json";
+const RALPH_DIR = ".ralph";
+const CONFIG_FILE = "config.json";
+const PROMPT_FILE = "prompt.md";
 const PRD_FILE = "prd.json";
 const PROGRESS_FILE = "progress.txt";
-const PROMPT_FILE = "ralph-prompt.md";
 
 export async function init(_args: string[]): Promise<void> {
   const cwd = process.cwd();
+  const ralphDir = join(cwd, RALPH_DIR);
 
   console.log("Initializing ralph in current directory...\n");
 
-  // Check for existing config
-  if (existsSync(join(cwd, CONFIG_FILE))) {
-    const overwrite = await promptConfirm("ralph.config.json already exists. Overwrite?");
-    if (!overwrite) {
+  // Check for existing .ralph directory
+  if (existsSync(ralphDir)) {
+    const reinit = await promptConfirm(".ralph/ directory already exists. Re-initialize?");
+    if (!reinit) {
       console.log("Aborted.");
       return;
     }
+  } else {
+    mkdirSync(ralphDir, { recursive: true });
+    console.log(`Created ${RALPH_DIR}/`);
   }
 
   // Select language
@@ -53,45 +58,48 @@ export async function init(_args: string[]): Promise<void> {
     testCommand: finalConfig.testCommand,
   };
 
-  writeFileSync(join(cwd, CONFIG_FILE), JSON.stringify(configData, null, 2) + "\n");
-  console.log(`\nCreated ${CONFIG_FILE}`);
+  const configPath = join(ralphDir, CONFIG_FILE);
+  writeFileSync(configPath, JSON.stringify(configData, null, 2) + "\n");
+  console.log(`\nCreated ${RALPH_DIR}/${CONFIG_FILE}`);
 
   // Write prompt file (ask if exists)
   const prompt = generatePrompt(finalConfig);
-  const promptPath = join(cwd, PROMPT_FILE);
+  const promptPath = join(ralphDir, PROMPT_FILE);
 
   if (existsSync(promptPath)) {
-    const overwritePrompt = await promptConfirm(`${PROMPT_FILE} already exists. Overwrite?`);
+    const overwritePrompt = await promptConfirm(`${RALPH_DIR}/${PROMPT_FILE} already exists. Overwrite?`);
     if (overwritePrompt) {
       writeFileSync(promptPath, prompt + "\n");
-      console.log(`Updated ${PROMPT_FILE}`);
+      console.log(`Updated ${RALPH_DIR}/${PROMPT_FILE}`);
     } else {
-      console.log(`Skipped ${PROMPT_FILE}`);
+      console.log(`Skipped ${RALPH_DIR}/${PROMPT_FILE}`);
     }
   } else {
     writeFileSync(promptPath, prompt + "\n");
-    console.log(`Created ${PROMPT_FILE}`);
+    console.log(`Created ${RALPH_DIR}/${PROMPT_FILE}`);
   }
 
   // Create PRD if not exists
-  if (!existsSync(join(cwd, PRD_FILE))) {
-    writeFileSync(join(cwd, PRD_FILE), DEFAULT_PRD + "\n");
-    console.log(`Created ${PRD_FILE}`);
+  const prdPath = join(ralphDir, PRD_FILE);
+  if (!existsSync(prdPath)) {
+    writeFileSync(prdPath, DEFAULT_PRD + "\n");
+    console.log(`Created ${RALPH_DIR}/${PRD_FILE}`);
   } else {
-    console.log(`Skipped ${PRD_FILE} (already exists)`);
+    console.log(`Skipped ${RALPH_DIR}/${PRD_FILE} (already exists)`);
   }
 
   // Create progress file if not exists
-  if (!existsSync(join(cwd, PROGRESS_FILE))) {
-    writeFileSync(join(cwd, PROGRESS_FILE), DEFAULT_PROGRESS);
-    console.log(`Created ${PROGRESS_FILE}`);
+  const progressPath = join(ralphDir, PROGRESS_FILE);
+  if (!existsSync(progressPath)) {
+    writeFileSync(progressPath, DEFAULT_PROGRESS);
+    console.log(`Created ${RALPH_DIR}/${PROGRESS_FILE}`);
   } else {
-    console.log(`Skipped ${PROGRESS_FILE} (already exists)`);
+    console.log(`Skipped ${RALPH_DIR}/${PROGRESS_FILE} (already exists)`);
   }
 
   console.log("\nRalph initialized successfully!");
   console.log("\nNext steps:");
-  console.log("  1. Edit prd.json to add your project requirements");
+  console.log("  1. Edit .ralph/prd.json to add your project requirements");
   console.log("  2. Run 'ralph once' to start the first iteration");
   console.log("  3. Or run 'ralph run 5' for 5 automated iterations");
 }

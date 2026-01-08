@@ -18,10 +18,8 @@ Thumbs.db
 *.log
 npm-debug.log*
 
-# Runtime files created by ralph init
-ralph.config.json
-ralph-prompt.md
-progress.txt
+# Runtime files created by ralph init (optional - you may want to commit .ralph/)
+# .ralph/
 
 # Environment
 .env

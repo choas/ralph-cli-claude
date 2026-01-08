@@ -29,9 +29,11 @@ EXAMPLES:
 
 CONFIGURATION:
   After running 'ralph init', you'll have:
-  - ralph-prompt.md    Shared prompt template
-  - prd.json           Product requirements document
-  - progress.txt       Progress tracking file
+  .ralph/
+  ├── config.json      Project configuration
+  ├── prompt.md        Shared prompt template
+  ├── prd.json         Product requirements document
+  └── progress.txt     Progress tracking file
 `;
 
 export function help(_args: string[]): void {
