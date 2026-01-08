@@ -97,8 +97,8 @@ RUN npm install -g @anthropic-ai/claude-code@\${CLAUDE_CODE_VERSION}
 # Install ralph-cli
 RUN npm install -g ralph-cli || echo "ralph-cli not yet published, will use local"
 ${languageSnippet}
-# Setup non-root user
-RUN echo "node ALL=(ALL) NOPASSWD: /usr/local/bin/init-firewall.sh" >> /etc/sudoers.d/node-firewall
+# Setup non-root user with full sudo access
+RUN echo "node ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/node-sudo
 
 # Create directories
 RUN mkdir -p /workspace && chown node:node /workspace
