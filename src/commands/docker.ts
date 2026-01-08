@@ -200,10 +200,12 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ..:/workspace
-      - ralph-claude-config:/home/node/.claude
+      # Mount host's ~/.claude for Pro/Max OAuth credentials
+      - \${HOME}/.claude:/home/node/.claude
       - ralph-bash-history:/commandhistory
     environment:
-      - ANTHROPIC_API_KEY=\${ANTHROPIC_API_KEY}
+      # For API key users (optional if using Pro/Max OAuth)
+      - ANTHROPIC_API_KEY=\${ANTHROPIC_API_KEY:-}
     working_dir: /workspace
     stdin_open: true
     tty: true
@@ -213,7 +215,6 @@ services:
     # command: bash -c "sudo /usr/local/bin/init-firewall.sh && bash"
 
 volumes:
-  ralph-claude-config:
   ralph-bash-history:
 `;
 
@@ -342,8 +343,9 @@ FILES GENERATED:
   ├── docker-compose.yml    Container orchestration
   └── .dockerignore         Build exclusions
 
-ENVIRONMENT:
-  Set ANTHROPIC_API_KEY before running the container.
+AUTHENTICATION:
+  Pro/Max users: Your ~/.claude credentials are mounted automatically.
+  API key users: export ANTHROPIC_API_KEY=sk-... before running.
 
 EXAMPLES:
   ralph docker                      # Generate files
