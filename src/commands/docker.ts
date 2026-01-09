@@ -100,8 +100,8 @@ RUN cp -r /root/.oh-my-zsh /home/node/.oh-my-zsh && chown -R node:node /home/nod
 # Install Claude Code CLI
 RUN npm install -g @anthropic-ai/claude-code@\${CLAUDE_CODE_VERSION}
 
-# Install ralph-cli-claude
-RUN npm install -g ralph-cli-claude || echo "ralph-cli-claude not yet published, will use local"
+# Install ralph-cli-claude from npm registry
+RUN npm install -g ralph-cli-claude
 ${languageSnippet}
 # Setup sudo only for firewall script (no general sudo for security)
 RUN echo "node ALL=(ALL) NOPASSWD: /usr/local/bin/init-firewall.sh" >> /etc/sudoers.d/node-firewall
