@@ -19,7 +19,29 @@ fi
 
 PROMPT=$(cat "$RALPH_DIR/prompt.md")
 
-claude --permission-mode acceptEdits --dangerously-skip-permissions \\
+# Detect if running in a container
+is_container() {
+  # Check DEVCONTAINER env var (set by ralph docker setup)
+  [ "\$DEVCONTAINER" = "true" ] && return 0
+  # Check for /.dockerenv file (Docker creates this)
+  [ -f "/.dockerenv" ] && return 0
+  # Check /proc/1/cgroup for container hints
+  if [ -f "/proc/1/cgroup" ]; then
+    grep -qE "(docker|podman|lxc|containerd)" /proc/1/cgroup 2>/dev/null && return 0
+  fi
+  # Check container environment variable
+  [ "\$container" = "podman" ] || [ "\$container" = "docker" ] && return 0
+  return 1
+}
+
+CLAUDE_ARGS="--permission-mode acceptEdits"
+if is_container; then
+  echo "Detected container environment - running with --dangerously-skip-permissions"
+  echo ""
+  CLAUDE_ARGS="\$CLAUDE_ARGS --dangerously-skip-permissions"
+fi
+
+claude \$CLAUDE_ARGS \\
   -p "@$RALPH_DIR/prd.json @$RALPH_DIR/progress.txt $PROMPT"
 `;
 
@@ -52,6 +74,28 @@ fi
 
 PROMPT=$(cat "$RALPH_DIR/prompt.md")
 
+# Detect if running in a container
+is_container() {
+  # Check DEVCONTAINER env var (set by ralph docker setup)
+  [ "\$DEVCONTAINER" = "true" ] && return 0
+  # Check for /.dockerenv file (Docker creates this)
+  [ -f "/.dockerenv" ] && return 0
+  # Check /proc/1/cgroup for container hints
+  if [ -f "/proc/1/cgroup" ]; then
+    grep -qE "(docker|podman|lxc|containerd)" /proc/1/cgroup 2>/dev/null && return 0
+  fi
+  # Check container environment variable
+  [ "\$container" = "podman" ] || [ "\$container" = "docker" ] && return 0
+  return 1
+}
+
+CLAUDE_ARGS="--permission-mode acceptEdits"
+if is_container; then
+  echo "Detected container environment - running with --dangerously-skip-permissions"
+  echo ""
+  CLAUDE_ARGS="\$CLAUDE_ARGS --dangerously-skip-permissions"
+fi
+
 TEMP_FILE=$(mktemp)
 trap "rm -f $TEMP_FILE" EXIT
 
@@ -63,7 +107,7 @@ for ((i=1; i<=ITERATIONS; i++)); do
   echo ""
 
   set +e
-  claude --permission-mode acceptEdits --dangerously-skip-permissions \\
+  claude \$CLAUDE_ARGS \\
     -p "@$RALPH_DIR/prd.json @$RALPH_DIR/progress.txt $PROMPT" | tee "$TEMP_FILE"
   set -e
 
