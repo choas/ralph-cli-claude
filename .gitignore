@@ -19,7 +19,9 @@ Thumbs.db
 npm-debug.log*
 
 # Runtime files created by ralph init (optional - you may want to commit .ralph/)
-# .ralph/
+.ralph/
+ralph.sh
+ralph-once.sh
 
 # Environment
 .env
