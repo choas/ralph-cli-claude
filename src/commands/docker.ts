@@ -254,7 +254,7 @@ dist
 *.log
 `;
 
-async function generateFiles(ralphDir: string, language: string, imageName: string): Promise<void> {
+async function generateFiles(ralphDir: string, language: string, imageName: string, force: boolean = false): Promise<void> {
   const dockerDir = join(ralphDir, DOCKER_DIR);
 
   // Create docker directory
@@ -273,7 +273,7 @@ async function generateFiles(ralphDir: string, language: string, imageName: stri
   for (const file of files) {
     const filePath = join(dockerDir, file.name);
 
-    if (existsSync(filePath)) {
+    if (existsSync(filePath) && !force) {
       const overwrite = await promptConfirm(`${DOCKER_DIR}/${file.name} already exists. Overwrite?`);
       if (!overwrite) {
         console.log(`Skipped ${file.name}`);
@@ -362,6 +362,7 @@ ralph docker - Generate and manage Docker sandbox environment
 
 USAGE:
   ralph docker              Generate Dockerfile and scripts
+  ralph docker -y           Generate files, overwrite without prompting
   ralph docker --build      Build the Docker image
   ralph docker --run        Run container with project mounted
 
@@ -419,9 +420,10 @@ INSTALLING PACKAGES (works with Docker & Podman):
   } else if (flag === "--run") {
     await runContainer(ralphDir);
   } else {
+    const force = flag === "-y" || flag === "--yes";
     console.log(`Generating Docker files for: ${config.language}`);
     console.log(`Image name: ${imageName}\n`);
-    await generateFiles(ralphDir, config.language, imageName);
+    await generateFiles(ralphDir, config.language, imageName, force);
 
     console.log(`
 Docker files generated in .ralph/docker/
