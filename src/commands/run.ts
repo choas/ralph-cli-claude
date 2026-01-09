@@ -1,5 +1,7 @@
 import { spawn } from "child_process";
-import { existsSync, readFileSync } from "fs";
+import { existsSync, readFileSync, writeFileSync, unlinkSync } from "fs";
+import { join } from "path";
+import { tmpdir } from "os";
 import { checkFilesExist, loadPrompt, getPaths } from "../utils/config.js";
 
 /**
@@ -35,7 +37,33 @@ function isRunningInContainer(): boolean {
   return false;
 }
 
-async function runIteration(prompt: string, paths: ReturnType<typeof getPaths>, sandboxed: boolean): Promise<{ exitCode: number; output: string }> {
+interface PrdItem {
+  category: string;
+  description: string;
+  steps: string[];
+  passes: boolean;
+}
+
+/**
+ * Creates a filtered PRD file containing only incomplete items (passes: false).
+ * Returns the path to the temp file, or null if all items pass.
+ */
+function createFilteredPrd(prdPath: string): { tempPath: string; hasIncomplete: boolean } {
+  const content = readFileSync(prdPath, "utf-8");
+  const items: PrdItem[] = JSON.parse(content);
+
+  const incompleteItems = items.filter(item => item.passes === false);
+
+  const tempPath = join(tmpdir(), `ralph-prd-filtered-${Date.now()}.json`);
+  writeFileSync(tempPath, JSON.stringify(incompleteItems, null, 2));
+
+  return {
+    tempPath,
+    hasIncomplete: incompleteItems.length > 0
+  };
+}
+
+async function runIteration(prompt: string, paths: ReturnType<typeof getPaths>, sandboxed: boolean, filteredPrdPath: string): Promise<{ exitCode: number; output: string }> {
   return new Promise((resolve, reject) => {
     let output = "";
 
@@ -47,14 +75,14 @@ async function runIteration(prompt: string, paths: ReturnType<typeof getPaths>, 
       claudeArgs.push("--dangerously-skip-permissions");
     }
 
-    claudeArgs.push("-p", `@${paths.prd} @${paths.progress} ${prompt}`);
+    // Use the filtered PRD (only incomplete items) for the prompt
+    claudeArgs.push("-p", `@${filteredPrdPath} @${paths.progress} ${prompt}`);
 
     const proc = spawn(
       "claude",
       claudeArgs,
       {
         stdio: ["inherit", "pipe", "inherit"],
-        shell: true,
       }
     );
 
@@ -96,32 +124,67 @@ export async function run(args: string[]): Promise<void> {
     console.log("Detected container environment - running with --dangerously-skip-permissions\n");
   }
 
-  for (let i = 1; i <= iterations; i++) {
-    console.log(`\n${"=".repeat(50)}`);
-    console.log(`Iteration ${i} of ${iterations}`);
-    console.log(`${"=".repeat(50)}\n`);
+  // Track temp file for cleanup
+  let filteredPrdPath: string | null = null;
 
-    const { exitCode, output } = await runIteration(prompt, paths, sandboxed);
+  try {
+    for (let i = 1; i <= iterations; i++) {
+      console.log(`\n${"=".repeat(50)}`);
+      console.log(`Iteration ${i} of ${iterations}`);
+      console.log(`${"=".repeat(50)}\n`);
 
-    if (exitCode !== 0) {
-      console.error(`\nClaude exited with code ${exitCode}`);
-      console.log("Continuing to next iteration...");
-    }
+      // Create a fresh filtered PRD for each iteration (in case items were completed)
+      const { tempPath, hasIncomplete } = createFilteredPrd(paths.prd);
+      filteredPrdPath = tempPath;
 
-    // Check for completion signal
-    if (output.includes("<promise>COMPLETE</promise>")) {
-      console.log("\n" + "=".repeat(50));
-      console.log("PRD COMPLETE - All features implemented!");
-      console.log("=".repeat(50));
-
-      // Try to send notification (optional)
-      try {
-        spawn("tt", ["notify", "Ralph: PRD Complete!"], { stdio: "ignore" });
-      } catch {
-        // tt notify not available, ignore
+      if (!hasIncomplete) {
+        console.log("\n" + "=".repeat(50));
+        console.log("PRD COMPLETE - All features already implemented!");
+        console.log("=".repeat(50));
+        break;
       }
 
-      break;
+      console.log(`Filtered PRD: sending only incomplete items to Claude\n`);
+
+      const { exitCode, output } = await runIteration(prompt, paths, sandboxed, filteredPrdPath);
+
+      // Clean up temp file after each iteration
+      try {
+        unlinkSync(filteredPrdPath);
+      } catch {
+        // Ignore cleanup errors
+      }
+      filteredPrdPath = null;
+
+      if (exitCode !== 0) {
+        console.error(`\nClaude exited with code ${exitCode}`);
+        console.log("Continuing to next iteration...");
+      }
+
+      // Check for completion signal
+      if (output.includes("<promise>COMPLETE</promise>")) {
+        console.log("\n" + "=".repeat(50));
+        console.log("PRD COMPLETE - All features implemented!");
+        console.log("=".repeat(50));
+
+        // Try to send notification (optional)
+        try {
+          spawn("tt", ["notify", "Ralph: PRD Complete!"], { stdio: "ignore" });
+        } catch {
+          // tt notify not available, ignore
+        }
+
+        break;
+      }
+    }
+  } finally {
+    // Clean up temp file if it still exists
+    if (filteredPrdPath) {
+      try {
+        unlinkSync(filteredPrdPath);
+      } catch {
+        // Ignore cleanup errors
+      }
     }
   }
 
