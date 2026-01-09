@@ -6,6 +6,7 @@ export interface RalphConfig {
   checkCommand: string;
   testCommand: string;
   imageName?: string;
+  notifyCommand?: string;
 }
 
 const RALPH_DIR = ".ralph";

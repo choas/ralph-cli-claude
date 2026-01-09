@@ -2,7 +2,7 @@ import { spawn } from "child_process";
 import { existsSync, readFileSync, writeFileSync, unlinkSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
-import { checkFilesExist, loadPrompt, getPaths } from "../utils/config.js";
+import { checkFilesExist, loadConfig, loadPrompt, getPaths } from "../utils/config.js";
 
 /**
  * Detects if we're running inside a container (Docker or Podman).
@@ -113,6 +113,7 @@ export async function run(args: string[]): Promise<void> {
 
   checkFilesExist();
 
+  const config = loadConfig();
   const prompt = loadPrompt();
   const paths = getPaths();
 
@@ -167,11 +168,13 @@ export async function run(args: string[]): Promise<void> {
         console.log("PRD COMPLETE - All features implemented!");
         console.log("=".repeat(50));
 
-        // Try to send notification (optional)
-        try {
-          spawn("tt", ["notify", "Ralph: PRD Complete!"], { stdio: "ignore" });
-        } catch {
-          // tt notify not available, ignore
+        // Send notification if configured
+        if (config.notifyCommand) {
+          const [cmd, ...cmdArgs] = config.notifyCommand.split(" ");
+          const notifyProc = spawn(cmd, [...cmdArgs, "Ralph: PRD Complete!"], { stdio: "ignore" });
+          notifyProc.on("error", () => {
+            // Notification command not available, ignore
+          });
         }
 
         break;
