@@ -140,6 +140,36 @@ Generates `ralph.sh` and `ralph-once.sh` in your project root.
 
 When all PRD items pass, Claude outputs `<promise>COMPLETE</promise>` and stops.
 
+## Security
+
+### Container Requirement
+
+**It is strongly recommended to run ralph inside a Docker container for security.** The Ralph Wiggum technique involves running an AI agent autonomously, which means granting it elevated permissions to execute code and modify files without manual approval for each action.
+
+### The `--dangerously-skip-permissions` Flag
+
+When running inside a container, ralph automatically passes the `--dangerously-skip-permissions` flag to Claude Code. This flag:
+
+- Allows Claude to execute commands and modify files without prompting for permission
+- Is **only** enabled when ralph detects it's running inside a container
+- Is required for autonomous operation (otherwise Claude would pause for approval on every action)
+
+**Warning:** The `--dangerously-skip-permissions` flag gives the AI agent full control over the environment. This is why container isolation is critical:
+
+- The container provides a sandbox boundary
+- Network access is restricted to essential services (GitHub, npm, Anthropic API)
+- Your host system remains protected even if something goes wrong
+
+### Container Detection
+
+Ralph detects container environments by checking:
+- `DEVCONTAINER` environment variable
+- Presence of `/.dockerenv` file
+- Container indicators in `/proc/1/cgroup`
+- `container` environment variable
+
+If you're running outside a container and need autonomous mode, use `ralph docker` to set up a safe sandbox environment first.
+
 ## Requirements
 
 - Node.js 18+
