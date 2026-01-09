@@ -18,6 +18,7 @@ PRD SUBCOMMANDS:
   prd list          List all PRD entries
   prd status        Show PRD completion status
   prd toggle <n>    Toggle passes status for entry n
+  prd toggle --all  Toggle all PRD entries
 
 EXAMPLES:
   ralph init                 # Initialize ralph for your project

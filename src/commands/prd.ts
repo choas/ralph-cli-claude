@@ -137,10 +137,31 @@ function status(): void {
 }
 
 function toggle(args: string[]): void {
-  const index = parseInt(args[0]);
+  const arg = args[0];
+
+  // Check for --all flag
+  if (arg === "--all" || arg === "-a") {
+    const prd = loadPrd();
+
+    if (prd.length === 0) {
+      console.log("No PRD entries to toggle.");
+      return;
+    }
+
+    prd.forEach((entry) => {
+      entry.passes = !entry.passes;
+    });
+    savePrd(prd);
+
+    console.log(`Toggled all ${prd.length} PRD entries.`);
+    return;
+  }
+
+  const index = parseInt(arg);
 
   if (!index || isNaN(index)) {
     console.error("Usage: ralph prd toggle <number>");
+    console.error("       ralph prd toggle --all");
     process.exit(1);
   }
 
@@ -178,10 +199,11 @@ export async function prd(args: string[]): Promise<void> {
     default:
       console.error("Usage: ralph prd <add|list|status|toggle>");
       console.error("\nSubcommands:");
-      console.error("  add           Add a new PRD entry");
-      console.error("  list          List all PRD entries");
-      console.error("  status        Show completion status");
-      console.error("  toggle <n>    Toggle passes status for entry n");
+      console.error("  add              Add a new PRD entry");
+      console.error("  list             List all PRD entries");
+      console.error("  status           Show completion status");
+      console.error("  toggle <n>       Toggle passes status for entry n");
+      console.error("  toggle --all     Toggle all PRD entries");
       process.exit(1);
   }
 }
