@@ -299,10 +299,11 @@ async function buildImage(ralphDir: string): Promise<void> {
     process.exit(1);
   }
 
-  console.log("Building Docker image...\n");
+  console.log("Building Docker image (fetching latest Claude Code)...\n");
 
   return new Promise((resolve, reject) => {
-    const proc = spawn("docker", ["compose", "build"], {
+    // Use --no-cache and --pull to ensure we always get the latest Claude Code version
+    const proc = spawn("docker", ["compose", "build", "--no-cache", "--pull"], {
       cwd: dockerDir,
       stdio: "inherit",
     });
@@ -363,7 +364,7 @@ ralph docker - Generate and manage Docker sandbox environment
 USAGE:
   ralph docker              Generate Dockerfile and scripts
   ralph docker -y           Generate files, overwrite without prompting
-  ralph docker --build      Build the Docker image
+  ralph docker --build      Build image (always fetches latest Claude Code)
   ralph docker --run        Run container with project mounted
 
 FILES GENERATED:
