@@ -157,27 +157,61 @@ function toggle(args: string[]): void {
     return;
   }
 
-  const index = parseInt(arg);
+  // Parse all numeric arguments
+  const indices: number[] = [];
+  for (const a of args) {
+    const index = parseInt(a);
+    if (!index || isNaN(index)) {
+      console.error("Usage: ralph prd toggle <number> [number2] [number3] ...");
+      console.error("       ralph prd toggle --all");
+      process.exit(1);
+    }
+    indices.push(index);
+  }
 
-  if (!index || isNaN(index)) {
-    console.error("Usage: ralph prd toggle <number>");
+  if (indices.length === 0) {
+    console.error("Usage: ralph prd toggle <number> [number2] [number3] ...");
     console.error("       ralph prd toggle --all");
     process.exit(1);
   }
 
   const prd = loadPrd();
 
-  if (index < 1 || index > prd.length) {
-    console.error(`Invalid entry number. Must be 1-${prd.length}`);
-    process.exit(1);
+  // Validate all indices
+  for (const index of indices) {
+    if (index < 1 || index > prd.length) {
+      console.error(`Invalid entry number: ${index}. Must be 1-${prd.length}`);
+      process.exit(1);
+    }
   }
 
-  const entry = prd[index - 1];
-  entry.passes = !entry.passes;
-  savePrd(prd);
+  // Toggle each entry
+  for (const index of indices) {
+    const entry = prd[index - 1];
+    entry.passes = !entry.passes;
+    const statusText = entry.passes ? "PASSING" : "NOT PASSING";
+    console.log(`Entry #${index} "${entry.description}" is now ${statusText}`);
+  }
 
-  const statusText = entry.passes ? "PASSING" : "NOT PASSING";
-  console.log(`Entry #${index} "${entry.description}" is now ${statusText}`);
+  savePrd(prd);
+}
+
+function clean(): void {
+  const prd = loadPrd();
+
+  const originalLength = prd.length;
+  const filtered = prd.filter((entry) => !entry.passes);
+
+  if (filtered.length === originalLength) {
+    console.log("No passing entries to clean.");
+    return;
+  }
+
+  const removed = originalLength - filtered.length;
+  savePrd(filtered);
+
+  console.log(`Removed ${removed} passing ${removed === 1 ? "entry" : "entries"}.`);
+  console.log(`${filtered.length} ${filtered.length === 1 ? "entry" : "entries"} remaining.`);
 }
 
 export async function prd(args: string[]): Promise<void> {
@@ -196,14 +230,18 @@ export async function prd(args: string[]): Promise<void> {
     case "toggle":
       toggle(args.slice(1));
       break;
+    case "clean":
+      clean();
+      break;
     default:
-      console.error("Usage: ralph prd <add|list|status|toggle>");
+      console.error("Usage: ralph prd <add|list|status|toggle|clean>");
       console.error("\nSubcommands:");
       console.error("  add              Add a new PRD entry");
       console.error("  list             List all PRD entries");
       console.error("  status           Show completion status");
-      console.error("  toggle <n>       Toggle passes status for entry n");
+      console.error("  toggle <n> ...   Toggle passes status for entry n (accepts multiple)");
       console.error("  toggle --all     Toggle all PRD entries");
+      console.error("  clean            Remove all passing entries from the PRD");
       process.exit(1);
   }
 }

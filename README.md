@@ -170,6 +170,29 @@ Ralph detects container environments by checking:
 
 If you're running outside a container and need autonomous mode, use `ralph docker` to set up a safe sandbox environment first.
 
+## Development
+
+To contribute or test changes to ralph locally:
+
+```bash
+# Clone the repository
+git clone https://github.com/anthropics/ralph-cli-claude
+cd ralph-cli-claude
+
+# Install dependencies
+npm install
+
+# Run ralph in development mode (without building)
+npm run dev -- <args>
+
+# Examples:
+npm run dev -- --version
+npm run dev -- prd list
+npm run dev -- once
+```
+
+The `npm run dev -- <args>` command runs ralph directly from TypeScript source using `tsx`, allowing you to test changes without rebuilding.
+
 ## Requirements
 
 - Node.js 18+
