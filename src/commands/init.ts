@@ -1,13 +1,20 @@
-import { existsSync, writeFileSync, mkdirSync } from "fs";
-import { join, basename } from "path";
+import { existsSync, writeFileSync, mkdirSync, copyFileSync } from "fs";
+import { join, basename, dirname } from "path";
+import { fileURLToPath } from "url";
 import { LANGUAGES, generatePrompt, DEFAULT_PRD, DEFAULT_PROGRESS, type LanguageConfig } from "../templates/prompts.js";
 import { promptSelect, promptConfirm, promptInput } from "../utils/prompt.js";
+
+// Get package root directory (works for both dev and installed package)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const PACKAGE_ROOT = join(__dirname, "..", "..");  // dist/commands -> dist -> package root
 
 const RALPH_DIR = ".ralph";
 const CONFIG_FILE = "config.json";
 const PROMPT_FILE = "prompt.md";
 const PRD_FILE = "prd.json";
 const PROGRESS_FILE = "progress.txt";
+const PRD_GUIDE_FILE = "HOW-TO-WRITE-PRDs.md";
 
 export async function init(_args: string[]): Promise<void> {
   const cwd = process.cwd();
@@ -102,9 +109,22 @@ export async function init(_args: string[]): Promise<void> {
     console.log(`Skipped ${RALPH_DIR}/${PROGRESS_FILE} (already exists)`);
   }
 
+  // Copy PRD guide file from package if not exists
+  const prdGuidePath = join(ralphDir, PRD_GUIDE_FILE);
+  if (!existsSync(prdGuidePath)) {
+    const sourcePath = join(PACKAGE_ROOT, "docs", PRD_GUIDE_FILE);
+    if (existsSync(sourcePath)) {
+      copyFileSync(sourcePath, prdGuidePath);
+      console.log(`Created ${RALPH_DIR}/${PRD_GUIDE_FILE}`);
+    }
+  } else {
+    console.log(`Skipped ${RALPH_DIR}/${PRD_GUIDE_FILE} (already exists)`);
+  }
+
   console.log("\nRalph initialized successfully!");
   console.log("\nNext steps:");
-  console.log("  1. Edit .ralph/prd.json to add your project requirements");
-  console.log("  2. Run 'ralph once' to start the first iteration");
-  console.log("  3. Or run 'ralph run 5' for 5 automated iterations");
+  console.log("  1. Read .ralph/HOW-TO-WRITE-PRDs.md for guidance on writing PRDs");
+  console.log("  2. Edit .ralph/prd.json to add your project requirements");
+  console.log("  3. Run 'ralph once' to start the first iteration");
+  console.log("  4. Or run 'ralph run 5' for 5 automated iterations");
 }
