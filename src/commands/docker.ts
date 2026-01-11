@@ -415,10 +415,27 @@ async function cleanImage(imageName: string, ralphDir: string): Promise<void> {
 
   console.log(`Cleaning Docker image: ${imageName}...\n`);
 
-  // First, remove any stopped containers using this image via docker compose
+  // First, stop any running containers via docker compose
   if (existsSync(join(dockerDir, "docker-compose.yml"))) {
+    // Stop running containers first
     await new Promise<void>((resolve) => {
-      const proc = spawn("docker", ["compose", "down", "--rmi", "local", "-v"], {
+      const proc = spawn("docker", ["compose", "stop", "--timeout", "5"], {
+        cwd: dockerDir,
+        stdio: "inherit",
+      });
+
+      proc.on("close", () => {
+        resolve();
+      });
+
+      proc.on("error", () => {
+        resolve();
+      });
+    });
+
+    // Remove containers, volumes, networks, and local images
+    await new Promise<void>((resolve) => {
+      const proc = spawn("docker", ["compose", "down", "--rmi", "local", "-v", "--remove-orphans", "--timeout", "5"], {
         cwd: dockerDir,
         stdio: "inherit",
       });
@@ -433,6 +450,40 @@ async function cleanImage(imageName: string, ralphDir: string): Promise<void> {
       });
     });
   }
+
+  // Find and forcibly remove any containers using volumes with our image name pattern
+  // This handles orphaned containers from previous runs or pods
+  const volumePattern = `docker_${imageName}`;
+  await new Promise<void>((resolve) => {
+    // List all containers (including stopped) and filter by volume name pattern
+    const proc = spawn("docker", ["ps", "-aq", "--filter", `volume=${volumePattern}`], {
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+
+    let output = "";
+    proc.stdout.on("data", (data) => {
+      output += data.toString();
+    });
+
+    proc.on("close", async () => {
+      const containerIds = output.trim().split("\n").filter((id) => id.length > 0);
+      if (containerIds.length > 0) {
+        // Force remove these containers
+        await new Promise<void>((innerResolve) => {
+          const rmProc = spawn("docker", ["rm", "-f", ...containerIds], {
+            stdio: "inherit",
+          });
+          rmProc.on("close", () => innerResolve());
+          rmProc.on("error", () => innerResolve());
+        });
+      }
+      resolve();
+    });
+
+    proc.on("error", () => {
+      resolve();
+    });
+  });
 
   // Also try to remove the image directly (in case it was built outside compose)
   await new Promise<void>((resolve) => {
@@ -449,10 +500,89 @@ async function cleanImage(imageName: string, ralphDir: string): Promise<void> {
     });
   });
 
-  // Clean up the associated volume
+  // Clean up volumes matching our pattern
+  await new Promise<void>((resolve) => {
+    // List volumes matching our pattern
+    const proc = spawn("docker", ["volume", "ls", "-q", "--filter", `name=${volumePattern}`], {
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+
+    let output = "";
+    proc.stdout.on("data", (data) => {
+      output += data.toString();
+    });
+
+    proc.on("close", async () => {
+      const volumeNames = output.trim().split("\n").filter((name) => name.length > 0);
+      if (volumeNames.length > 0) {
+        // Force remove these volumes
+        await new Promise<void>((innerResolve) => {
+          const rmProc = spawn("docker", ["volume", "rm", "-f", ...volumeNames], {
+            stdio: "inherit",
+          });
+          rmProc.on("close", () => innerResolve());
+          rmProc.on("error", () => innerResolve());
+        });
+      }
+      resolve();
+    });
+
+    proc.on("error", () => {
+      resolve();
+    });
+  });
+
+  // Also try removing the simple volume name pattern
   const volumeName = `${imageName}-history`;
   await new Promise<void>((resolve) => {
     const proc = spawn("docker", ["volume", "rm", "-f", volumeName], {
+      stdio: "inherit",
+    });
+
+    proc.on("close", () => {
+      resolve();
+    });
+
+    proc.on("error", () => {
+      resolve();
+    });
+  });
+
+  // For Podman: clean up any orphaned pods matching our pattern
+  await new Promise<void>((resolve) => {
+    const proc = spawn("docker", ["pod", "ls", "-q", "--filter", `name=docker`], {
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+
+    let output = "";
+    proc.stdout.on("data", (data) => {
+      output += data.toString();
+    });
+
+    proc.on("close", async () => {
+      const podIds = output.trim().split("\n").filter((id) => id.length > 0);
+      if (podIds.length > 0) {
+        // Force remove these pods (this also removes their containers)
+        await new Promise<void>((innerResolve) => {
+          const rmProc = spawn("docker", ["pod", "rm", "-f", ...podIds], {
+            stdio: "inherit",
+          });
+          rmProc.on("close", () => innerResolve());
+          rmProc.on("error", () => innerResolve());
+        });
+      }
+      resolve();
+    });
+
+    proc.on("error", () => {
+      // docker pod command doesn't exist (not Podman) - ignore
+      resolve();
+    });
+  });
+
+  // Clean up the docker_default network if it exists and is empty
+  await new Promise<void>((resolve) => {
+    const proc = spawn("docker", ["network", "rm", "docker_default"], {
       stdio: "inherit",
     });
 
