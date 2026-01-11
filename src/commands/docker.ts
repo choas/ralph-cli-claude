@@ -95,7 +95,29 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
 RUN cp -r /root/.oh-my-zsh /home/node/.oh-my-zsh && chown -R node:node /home/node/.oh-my-zsh && \\
     cp /root/.zshrc /home/node/.zshrc && chown node:node /home/node/.zshrc && \\
     sed -i 's|/root/.oh-my-zsh|/home/node/.oh-my-zsh|g' /home/node/.zshrc && \\
-    echo 'PROMPT="%K{yellow}%F{black}[ralph]%f%k%K{yellow}%F{black}%d%f%k\\$ "' >> /home/node/.zshrc
+    echo 'PROMPT="%K{yellow}%F{black}[ralph]%f%k%K{yellow}%F{black}%d%f%k\\$ "' >> /home/node/.zshrc && \\
+    echo '' >> /home/node/.zshrc && \\
+    echo '# Ralph Wiggum ASCII art banner' >> /home/node/.zshrc && \\
+    echo 'if [ -z "$RALPH_BANNER_SHOWN" ]; then' >> /home/node/.zshrc && \\
+    echo '  export RALPH_BANNER_SHOWN=1' >> /home/node/.zshrc && \\
+    echo '  echo ""' >> /home/node/.zshrc && \\
+    echo '  echo "       _____|~~\\\\_____      "' >> /home/node/.zshrc && \\
+    echo '  echo "  _-~                 ~-_   "' >> /home/node/.zshrc && \\
+    echo '  echo " /                       \\\\  "' >> /home/node/.zshrc && \\
+    echo '  echo "|        R A L P H        | "' >> /home/node/.zshrc && \\
+    echo '  echo "|    _              _     | "' >> /home/node/.zshrc && \\
+    echo '  echo "|   |_|    ____    |_|    | "' >> /home/node/.zshrc && \\
+    echo '  echo "|         /    \\\\         | "' >> /home/node/.zshrc && \\
+    echo '  echo "|         \\\\____/         | "' >> /home/node/.zshrc && \\
+    echo '  echo "|   \\\\_              _/   | "' >> /home/node/.zshrc && \\
+    echo '  echo " \\\\    ~-__________-~    /  "' >> /home/node/.zshrc && \\
+    echo '  echo "  ~-_               _-~   "' >> /home/node/.zshrc && \\
+    echo '  echo "      ~--_______--~       "' >> /home/node/.zshrc && \\
+    echo '  echo ""' >> /home/node/.zshrc && \\
+    echo '  echo "  Hi, Super Nintendo Chalmers!"' >> /home/node/.zshrc && \\
+    echo '  echo "  Welcome to Ralph sandbox environment."' >> /home/node/.zshrc && \\
+    echo '  echo ""' >> /home/node/.zshrc && \\
+    echo 'fi' >> /home/node/.zshrc
 
 # Install Claude Code CLI
 RUN npm install -g @anthropic-ai/claude-code@\${CLAUDE_CODE_VERSION}
