@@ -63,3 +63,49 @@ export async function promptConfirm(message: string): Promise<boolean> {
     console.log("Please enter y or n.");
   }
 }
+
+export async function promptMultiSelect(message: string, options: string[]): Promise<string[]> {
+  console.log(`\n${message}`);
+  options.forEach((opt, i) => {
+    console.log(`  ${i + 1}. ${opt}`);
+  });
+  console.log(`  ${options.length + 1}. [Add custom technology]`);
+  console.log(`  0. [Done selecting]`);
+
+  const prompt = createPrompt();
+  const selected: string[] = [];
+  const customTechs: string[] = [];
+
+  console.log("\nEnter numbers one at a time (0 when done):");
+
+  while (true) {
+    const answer = await prompt.question("> ");
+    const num = parseInt(answer.trim());
+
+    if (num === 0) {
+      prompt.close();
+      return [...selected, ...customTechs];
+    }
+
+    if (num === options.length + 1) {
+      const customName = await prompt.question("Enter custom technology name: ");
+      if (customName.trim()) {
+        customTechs.push(customName.trim());
+        console.log(`Added: ${customName.trim()}`);
+      }
+      continue;
+    }
+
+    if (num >= 1 && num <= options.length) {
+      const selectedOption = options[num - 1];
+      if (!selected.includes(selectedOption)) {
+        selected.push(selectedOption);
+        console.log(`Selected: ${selectedOption}`);
+      } else {
+        console.log(`Already selected: ${selectedOption}`);
+      }
+    } else {
+      console.log("Invalid selection.");
+    }
+  }
+}

@@ -1,8 +1,14 @@
+export interface TechnologyStack {
+  name: string;
+  description: string;
+}
+
 export interface LanguageConfig {
   name: string;
   checkCommand: string;
   testCommand: string;
   description: string;
+  technologies?: TechnologyStack[];
 }
 
 export const LANGUAGES: Record<string, LanguageConfig> = {
@@ -11,36 +17,97 @@ export const LANGUAGES: Record<string, LanguageConfig> = {
     checkCommand: "bun check",
     testCommand: "bun test",
     description: "Bun runtime with TypeScript",
+    technologies: [
+      { name: "Elysia", description: "Fast web framework for Bun" },
+      { name: "Hono", description: "Lightweight web framework" },
+      { name: "Drizzle ORM", description: "TypeScript ORM" },
+      { name: "Prisma", description: "Type-safe database ORM" },
+      { name: "SQLite", description: "Embedded SQL database" },
+      { name: "PostgreSQL", description: "Advanced SQL database" },
+    ],
   },
   node: {
     name: "Node.js (TypeScript)",
     checkCommand: "npm run typecheck",
     testCommand: "npm test",
     description: "Node.js with TypeScript",
+    technologies: [
+      { name: "Express", description: "Minimal web framework" },
+      { name: "Fastify", description: "High-performance web framework" },
+      { name: "NestJS", description: "Progressive Node.js framework" },
+      { name: "Next.js", description: "React framework for production" },
+      { name: "Prisma", description: "Type-safe database ORM" },
+      { name: "TypeORM", description: "TypeScript ORM" },
+      { name: "Jest", description: "JavaScript testing framework" },
+      { name: "Vitest", description: "Fast unit testing framework" },
+      { name: "PostgreSQL", description: "Advanced SQL database" },
+      { name: "MongoDB", description: "NoSQL document database" },
+      { name: "Redis", description: "In-memory data store" },
+    ],
   },
   python: {
     name: "Python",
     checkCommand: "mypy .",
     testCommand: "pytest",
     description: "Python with mypy type checking",
+    technologies: [
+      { name: "FastAPI", description: "Modern async web framework" },
+      { name: "Django", description: "Full-featured web framework" },
+      { name: "Flask", description: "Lightweight web framework" },
+      { name: "SQLAlchemy", description: "SQL toolkit and ORM" },
+      { name: "Pydantic", description: "Data validation library" },
+      { name: "Celery", description: "Distributed task queue" },
+      { name: "PostgreSQL", description: "Advanced SQL database" },
+      { name: "Redis", description: "In-memory data store" },
+      { name: "pytest", description: "Testing framework" },
+    ],
   },
   go: {
     name: "Go",
     checkCommand: "go build ./...",
     testCommand: "go test ./...",
     description: "Go language",
+    technologies: [
+      { name: "Gin", description: "High-performance web framework" },
+      { name: "Echo", description: "Minimalist web framework" },
+      { name: "Fiber", description: "Express-inspired web framework" },
+      { name: "GORM", description: "ORM library for Go" },
+      { name: "sqlx", description: "SQL extensions for Go" },
+      { name: "PostgreSQL", description: "Advanced SQL database" },
+      { name: "Redis", description: "In-memory data store" },
+    ],
   },
   rust: {
     name: "Rust",
     checkCommand: "cargo check",
     testCommand: "cargo test",
     description: "Rust with Cargo",
+    technologies: [
+      { name: "Actix-web", description: "Powerful web framework" },
+      { name: "Axum", description: "Ergonomic web framework" },
+      { name: "Rocket", description: "Web framework with focus on ease" },
+      { name: "Diesel", description: "Safe, extensible ORM" },
+      { name: "SQLx", description: "Async SQL toolkit" },
+      { name: "Tokio", description: "Async runtime" },
+      { name: "Serde", description: "Serialization framework" },
+      { name: "PostgreSQL", description: "Advanced SQL database" },
+    ],
   },
   java: {
     name: "Java",
     checkCommand: "mvn compile",
     testCommand: "mvn test",
     description: "Java with Maven",
+    technologies: [
+      { name: "Spring Boot", description: "Production-ready framework" },
+      { name: "Quarkus", description: "Kubernetes-native Java" },
+      { name: "Micronaut", description: "Modern JVM framework" },
+      { name: "Hibernate", description: "ORM framework" },
+      { name: "JPA", description: "Java Persistence API" },
+      { name: "JUnit", description: "Testing framework" },
+      { name: "PostgreSQL", description: "Advanced SQL database" },
+      { name: "MySQL", description: "Popular SQL database" },
+    ],
   },
   none: {
     name: "None (custom)",

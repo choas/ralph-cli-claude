@@ -1,8 +1,8 @@
 import { existsSync, writeFileSync, mkdirSync, copyFileSync } from "fs";
 import { join, basename, dirname } from "path";
 import { fileURLToPath } from "url";
-import { LANGUAGES, generatePrompt, DEFAULT_PRD, DEFAULT_PROGRESS, type LanguageConfig } from "../templates/prompts.js";
-import { promptSelect, promptConfirm, promptInput } from "../utils/prompt.js";
+import { LANGUAGES, generatePrompt, DEFAULT_PRD, DEFAULT_PROGRESS, type LanguageConfig, type TechnologyStack } from "../templates/prompts.js";
+import { promptSelect, promptConfirm, promptInput, promptMultiSelect } from "../utils/prompt.js";
 
 // Get package root directory (works for both dev and installed package)
 const __filename = fileURLToPath(import.meta.url);
@@ -43,6 +43,31 @@ export async function init(_args: string[]): Promise<void> {
   const selectedKey = languageKeys[selectedIndex];
   const config = LANGUAGES[selectedKey];
 
+  // Select technology stack if available
+  let selectedTechnologies: string[] = [];
+
+  if (config.technologies && config.technologies.length > 0) {
+    const techOptions = config.technologies.map(t => `${t.name} - ${t.description}`);
+    const techNames = config.technologies.map(t => t.name);
+
+    selectedTechnologies = await promptMultiSelect(
+      "Select your technology stack (select multiple or add custom):",
+      techOptions
+    );
+
+    // Convert display names back to just technology names for predefined options
+    selectedTechnologies = selectedTechnologies.map(sel => {
+      const idx = techOptions.indexOf(sel);
+      return idx >= 0 ? techNames[idx] : sel;
+    });
+
+    if (selectedTechnologies.length > 0) {
+      console.log(`\nSelected technologies: ${selectedTechnologies.join(", ")}`);
+    } else {
+      console.log("\nNo technologies selected.");
+    }
+  }
+
   // Allow custom commands
   let checkCommand = config.checkCommand;
   let testCommand = config.testCommand;
@@ -63,12 +88,17 @@ export async function init(_args: string[]): Promise<void> {
   const imageName = `ralph-${projectName}`;
 
   // Write config file
-  const configData = {
+  const configData: Record<string, unknown> = {
     language: selectedKey,
     checkCommand: finalConfig.checkCommand,
     testCommand: finalConfig.testCommand,
     imageName,
   };
+
+  // Add technologies if any were selected
+  if (selectedTechnologies.length > 0) {
+    configData.technologies = selectedTechnologies;
+  }
 
   const configPath = join(ralphDir, CONFIG_FILE);
   writeFileSync(configPath, JSON.stringify(configData, null, 2) + "\n");
