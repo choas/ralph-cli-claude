@@ -36,6 +36,12 @@ export const LANGUAGES: Record<string, LanguageConfig> = {
     testCommand: "cargo test",
     description: "Rust with Cargo",
   },
+  java: {
+    name: "Java",
+    checkCommand: "mvn compile",
+    testCommand: "mvn test",
+    description: "Java with Maven",
+  },
   none: {
     name: "None (custom)",
     checkCommand: "echo 'no check configured'",

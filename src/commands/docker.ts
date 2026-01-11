@@ -36,6 +36,14 @@ ENV GOPATH="/home/node/go"
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/home/node/.cargo/bin:$PATH"
 `,
+  java: `
+# Install Java and Maven
+RUN apt-get update && apt-get install -y \\
+    openjdk-17-jdk \\
+    maven \\
+    && rm -rf /var/lib/apt/lists/*
+ENV JAVA_HOME="/usr/lib/jvm/java-17-openjdk-amd64"
+`,
   none: `
 # Custom language - add your dependencies here
 `,
