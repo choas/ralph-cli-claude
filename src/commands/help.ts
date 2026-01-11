@@ -43,6 +43,7 @@ EXAMPLES:
   ralph docker               # Generate Dockerfile for sandboxed env
   ralph docker --build       # Build Docker image
   ralph docker --run         # Run container interactively
+  ralph docker --clean       # Remove image and volumes
 
 CONFIGURATION:
   After running 'ralph init', you'll have:

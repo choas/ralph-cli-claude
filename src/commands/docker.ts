@@ -97,25 +97,18 @@ RUN cp -r /root/.oh-my-zsh /home/node/.oh-my-zsh && chown -R node:node /home/nod
     sed -i 's|/root/.oh-my-zsh|/home/node/.oh-my-zsh|g' /home/node/.zshrc && \\
     echo 'PROMPT="%K{yellow}%F{black}[ralph]%f%k%K{yellow}%F{black}%d%f%k\\$ "' >> /home/node/.zshrc && \\
     echo '' >> /home/node/.zshrc && \\
-    echo '# Ralph Wiggum ASCII art banner' >> /home/node/.zshrc && \\
+    echo '# Ralph ASCII art banner' >> /home/node/.zshrc && \\
     echo 'if [ -z "$RALPH_BANNER_SHOWN" ]; then' >> /home/node/.zshrc && \\
     echo '  export RALPH_BANNER_SHOWN=1' >> /home/node/.zshrc && \\
     echo '  echo ""' >> /home/node/.zshrc && \\
-    echo '  echo "       _____|~~\\\\_____      "' >> /home/node/.zshrc && \\
-    echo '  echo "  _-~                 ~-_   "' >> /home/node/.zshrc && \\
-    echo '  echo " /                       \\\\  "' >> /home/node/.zshrc && \\
-    echo '  echo "|        R A L P H        | "' >> /home/node/.zshrc && \\
-    echo '  echo "|    _              _     | "' >> /home/node/.zshrc && \\
-    echo '  echo "|   |_|    ____    |_|    | "' >> /home/node/.zshrc && \\
-    echo '  echo "|         /    \\\\         | "' >> /home/node/.zshrc && \\
-    echo '  echo "|         \\\\____/         | "' >> /home/node/.zshrc && \\
-    echo '  echo "|   \\\\_              _/   | "' >> /home/node/.zshrc && \\
-    echo '  echo " \\\\    ~-__________-~    /  "' >> /home/node/.zshrc && \\
-    echo '  echo "  ~-_               _-~   "' >> /home/node/.zshrc && \\
-    echo '  echo "      ~--_______--~       "' >> /home/node/.zshrc && \\
+    echo '  echo " ____      _    _     ____  _   _ "' >> /home/node/.zshrc && \\
+    echo '  echo "|  _ \\\\    / \\\\  | |   |  _ \\\\| | | |"' >> /home/node/.zshrc && \\
+    echo '  echo "| |_) |  / _ \\\\ | |   | |_) | |_| |"' >> /home/node/.zshrc && \\
+    echo '  echo "|  _ <  / ___ \\\\| |___|  __/|  _  |"' >> /home/node/.zshrc && \\
+    echo '  echo "|_| \\\\_\\\\/_/   \\\\_\\\\_____|_|   |_| |_|"' >> /home/node/.zshrc && \\
     echo '  echo ""' >> /home/node/.zshrc && \\
-    echo '  echo "  Hi, Super Nintendo Chalmers!"' >> /home/node/.zshrc && \\
-    echo '  echo "  Welcome to Ralph sandbox environment."' >> /home/node/.zshrc && \\
+    echo '  RALPH_VERSION=$(ralph --version 2>/dev/null | head -1 || echo "unknown")' >> /home/node/.zshrc && \\
+    echo '  echo "CLI - Version $RALPH_VERSION"' >> /home/node/.zshrc && \\
     echo '  echo ""' >> /home/node/.zshrc && \\
     echo 'fi' >> /home/node/.zshrc
 
@@ -375,6 +368,65 @@ async function runContainer(ralphDir: string): Promise<void> {
   });
 }
 
+async function cleanImage(imageName: string, ralphDir: string): Promise<void> {
+  const dockerDir = join(ralphDir, DOCKER_DIR);
+
+  console.log(`Cleaning Docker image: ${imageName}...\n`);
+
+  // First, remove any stopped containers using this image via docker compose
+  if (existsSync(join(dockerDir, "docker-compose.yml"))) {
+    await new Promise<void>((resolve) => {
+      const proc = spawn("docker", ["compose", "down", "--rmi", "local", "-v"], {
+        cwd: dockerDir,
+        stdio: "inherit",
+      });
+
+      proc.on("close", () => {
+        // Continue regardless of exit code (image may not exist)
+        resolve();
+      });
+
+      proc.on("error", () => {
+        resolve();
+      });
+    });
+  }
+
+  // Also try to remove the image directly (in case it was built outside compose)
+  await new Promise<void>((resolve) => {
+    const proc = spawn("docker", ["rmi", "-f", imageName], {
+      stdio: "inherit",
+    });
+
+    proc.on("close", () => {
+      resolve();
+    });
+
+    proc.on("error", () => {
+      resolve();
+    });
+  });
+
+  // Clean up the associated volume
+  const volumeName = `${imageName}-history`;
+  await new Promise<void>((resolve) => {
+    const proc = spawn("docker", ["volume", "rm", "-f", volumeName], {
+      stdio: "inherit",
+    });
+
+    proc.on("close", () => {
+      resolve();
+    });
+
+    proc.on("error", () => {
+      resolve();
+    });
+  });
+
+  console.log("\nDocker image and associated resources cleaned.");
+  console.log("Run 'ralph docker --build' to rebuild the image.");
+}
+
 export async function docker(args: string[]): Promise<void> {
   const flag = args[0];
 
@@ -388,6 +440,7 @@ USAGE:
   ralph docker -y           Generate files, overwrite without prompting
   ralph docker --build      Build image (always fetches latest Claude Code)
   ralph docker --run        Run container with project mounted
+  ralph docker --clean      Remove Docker image and associated resources
 
 FILES GENERATED:
   .ralph/docker/
@@ -404,6 +457,7 @@ EXAMPLES:
   ralph docker                      # Generate files
   ralph docker --build              # Build image
   ralph docker --run                # Start interactive shell
+  ralph docker --clean              # Remove image and volumes
 
   # Or use docker compose directly:
   cd .ralph/docker && docker compose run --rm ralph
@@ -442,6 +496,8 @@ INSTALLING PACKAGES (works with Docker & Podman):
     await buildImage(ralphDir);
   } else if (flag === "--run") {
     await runContainer(ralphDir);
+  } else if (flag === "--clean") {
+    await cleanImage(imageName, ralphDir);
   } else {
     const force = flag === "-y" || flag === "--yes";
     console.log(`Generating Docker files for: ${config.language}`);
