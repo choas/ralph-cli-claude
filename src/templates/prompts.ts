@@ -117,9 +117,23 @@ export const LANGUAGES: Record<string, LanguageConfig> = {
   },
 };
 
-export function generatePrompt(config: LanguageConfig): string {
-  return `You are an AI developer working on this project. Your task is to implement features from the PRD.
+export function generatePrompt(config: LanguageConfig, technologies?: string[]): string {
+  let techSection = "";
+  if (technologies && technologies.length > 0) {
+    techSection = `
+TECHNOLOGY STACK:
+- Language/Runtime: ${config.name}
+- Technologies: ${technologies.join(", ")}
+`;
+  } else {
+    techSection = `
+TECHNOLOGY STACK:
+- Language/Runtime: ${config.name}
+`;
+  }
 
+  return `You are an AI developer working on this project. Your task is to implement features from the PRD.
+${techSection}
 INSTRUCTIONS:
 1. Read the @prd.json file to find the highest priority feature that has "passes": false
 2. Implement that feature completely

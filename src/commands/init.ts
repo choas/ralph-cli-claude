@@ -105,7 +105,7 @@ export async function init(_args: string[]): Promise<void> {
   console.log(`\nCreated ${RALPH_DIR}/${CONFIG_FILE}`);
 
   // Write prompt file (ask if exists)
-  const prompt = generatePrompt(finalConfig);
+  const prompt = generatePrompt(finalConfig, selectedTechnologies);
   const promptPath = join(ralphDir, PROMPT_FILE);
 
   if (existsSync(promptPath)) {
