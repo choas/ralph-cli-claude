@@ -69,7 +69,7 @@ async function add(): Promise<void> {
   console.log(`\nAdded entry #${prd.length}: "${description}"`);
 }
 
-function list(): void {
+function list(category?: string): void {
   const prd = loadPrd();
 
   if (prd.length === 0) {
@@ -77,11 +77,25 @@ function list(): void {
     return;
   }
 
-  console.log("\nPRD Entries:\n");
+  // Filter by category if specified
+  const filteredPrd = category
+    ? prd.map((entry, i) => ({ entry, originalIndex: i })).filter(({ entry }) => entry.category === category)
+    : prd.map((entry, i) => ({ entry, originalIndex: i }));
 
-  prd.forEach((entry, i) => {
+  if (filteredPrd.length === 0) {
+    console.log(`No PRD entries found for category "${category}".`);
+    return;
+  }
+
+  if (category) {
+    console.log(`\nPRD Entries (category: ${category}):\n`);
+  } else {
+    console.log("\nPRD Entries:\n");
+  }
+
+  filteredPrd.forEach(({ entry, originalIndex }) => {
     const status = entry.passes ? "\x1b[32m[PASS]\x1b[0m" : "\x1b[33m[    ]\x1b[0m";
-    console.log(`  ${i + 1}. ${status} [${entry.category}] ${entry.description}`);
+    console.log(`  ${originalIndex + 1}. ${status} [${entry.category}] ${entry.description}`);
     entry.steps.forEach((step, j) => {
       console.log(`       ${j + 1}. ${step}`);
     });
@@ -214,6 +228,32 @@ function clean(): void {
   console.log(`${filtered.length} ${filtered.length === 1 ? "entry" : "entries"} remaining.`);
 }
 
+function parseListArgs(args: string[]): { category?: string } {
+  let category: string | undefined;
+
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === "--category" || args[i] === "-c") {
+      if (i + 1 < args.length) {
+        category = args[i + 1];
+        i++; // Skip the category value
+      } else {
+        console.error("Error: --category requires a value");
+        console.error(`Valid categories: ${CATEGORIES.join(", ")}`);
+        process.exit(1);
+      }
+    }
+  }
+
+  // Validate category if provided
+  if (category && !CATEGORIES.includes(category)) {
+    console.error(`Error: Invalid category "${category}"`);
+    console.error(`Valid categories: ${CATEGORIES.join(", ")}`);
+    process.exit(1);
+  }
+
+  return { category };
+}
+
 export async function prd(args: string[]): Promise<void> {
   const subcommand = args[0];
 
@@ -221,9 +261,11 @@ export async function prd(args: string[]): Promise<void> {
     case "add":
       await add();
       break;
-    case "list":
-      list();
+    case "list": {
+      const { category } = parseListArgs(args.slice(1));
+      list(category);
       break;
+    }
     case "status":
       status();
       break;
@@ -236,12 +278,13 @@ export async function prd(args: string[]): Promise<void> {
     default:
       console.error("Usage: ralph prd <add|list|status|toggle|clean>");
       console.error("\nSubcommands:");
-      console.error("  add              Add a new PRD entry");
-      console.error("  list             List all PRD entries");
-      console.error("  status           Show completion status");
-      console.error("  toggle <n> ...   Toggle passes status for entry n (accepts multiple)");
-      console.error("  toggle --all     Toggle all PRD entries");
-      console.error("  clean            Remove all passing entries from the PRD");
+      console.error("  add                         Add a new PRD entry");
+      console.error("  list [--category <cat>]     List all PRD entries (optionally filter by category)");
+      console.error("  status                      Show completion status");
+      console.error("  toggle <n> ...              Toggle passes status for entry n (accepts multiple)");
+      console.error("  toggle --all                Toggle all PRD entries");
+      console.error("  clean                       Remove all passing entries from the PRD");
+      console.error(`\nValid categories: ${CATEGORIES.join(", ")}`);
       process.exit(1);
   }
 }

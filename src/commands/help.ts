@@ -19,10 +19,15 @@ RUN OPTIONS:
 
 PRD SUBCOMMANDS:
   prd add           Add a new PRD entry (interactive)
-  prd list          List all PRD entries
+  prd list [opts]   List all PRD entries
   prd status        Show PRD completion status
   prd toggle <n>    Toggle passes status for entry n
   prd toggle --all  Toggle all PRD entries
+  prd clean         Remove all passing entries from the PRD
+
+PRD LIST OPTIONS:
+  --category, -c <category>  Filter PRD items by category
+                             Valid: ui, feature, bugfix, setup, development, testing, docs
 
 EXAMPLES:
   ralph init                 # Initialize ralph for your project
@@ -32,6 +37,7 @@ EXAMPLES:
   ralph run 3 -c bugfix      # Run 3 iterations, only bugfix items
   ralph prd add              # Add new PRD entry
   ralph prd list             # Show all entries
+  ralph prd list -c feature  # Show only feature entries
   ralph prd status           # Show completion summary
   ralph scripts              # Generate ralph.sh and ralph-once.sh
   ralph docker               # Generate Dockerfile for sandboxed env
