@@ -193,6 +193,21 @@ npm run dev -- once
 
 The `npm run dev -- <args>` command runs ralph directly from TypeScript source using `tsx`, allowing you to test changes without rebuilding.
 
+### Platform-Specific Dependencies
+
+The `node_modules` folder contains platform-specific binaries (e.g., esbuild). If you switch between running on your host machine and inside a Docker/Podman container, you'll need to reinstall dependencies:
+
+```bash
+# When switching environments (host <-> container)
+rm -rf node_modules && npm install
+```
+
+Alternatively, when mounting your project into a container, use a separate volume for node_modules to keep host and container dependencies isolated:
+
+```bash
+podman run -v $(pwd):/workspace -v /workspace/node_modules your-image
+```
+
 ## Requirements
 
 - Node.js 18+
