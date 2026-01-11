@@ -110,9 +110,17 @@ async function runIteration(prompt: string, paths: ReturnType<typeof getPaths>, 
   });
 }
 
+/**
+ * Sleep for the specified number of milliseconds.
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 export async function run(args: string[]): Promise<void> {
-  // Parse --category flag
+  // Parse flags
   let category: string | undefined;
+  let loopMode = false;
   const filteredArgs: string[] = [];
 
   for (let i = 0; i < args.length; i++) {
@@ -125,6 +133,8 @@ export async function run(args: string[]): Promise<void> {
         console.error(`Valid categories: ${CATEGORIES.join(", ")}`);
         process.exit(1);
       }
+    } else if (args[i] === "--loop" || args[i] === "-l") {
+      loopMode = true;
     } else {
       filteredArgs.push(args[i]);
     }
@@ -137,10 +147,12 @@ export async function run(args: string[]): Promise<void> {
     process.exit(1);
   }
 
-  const iterations = parseInt(filteredArgs[0]);
+  // In loop mode, iterations argument is optional (defaults to unlimited)
+  const iterations = loopMode ? (parseInt(filteredArgs[0]) || Infinity) : parseInt(filteredArgs[0]);
 
-  if (!iterations || iterations < 1 || isNaN(iterations)) {
+  if (!loopMode && (!iterations || iterations < 1 || isNaN(iterations))) {
     console.error("Usage: ralph run <iterations> [--category <category>]");
+    console.error("       ralph run --loop [--category <category>]");
     console.error("  <iterations> must be a positive integer");
     console.error(`  <category> must be one of: ${CATEGORIES.join(", ")}`);
     process.exit(1);
@@ -155,7 +167,11 @@ export async function run(args: string[]): Promise<void> {
   // Check if we're running in a sandboxed container environment
   const sandboxed = isRunningInContainer();
 
-  console.log(`Starting ${iterations} ralph iteration(s)...`);
+  if (loopMode) {
+    console.log("Starting ralph in loop mode (runs until interrupted)...");
+  } else {
+    console.log(`Starting ${iterations} ralph iteration(s)...`);
+  }
   if (category) {
     console.log(`Filtering PRD items by category: ${category}`);
   }
@@ -167,10 +183,16 @@ export async function run(args: string[]): Promise<void> {
   // Track temp file for cleanup
   let filteredPrdPath: string | null = null;
 
+  const POLL_INTERVAL_MS = 30000; // 30 seconds between checks when waiting for new items
+
   try {
     for (let i = 1; i <= iterations; i++) {
       console.log(`\n${"=".repeat(50)}`);
-      console.log(`Iteration ${i} of ${iterations}`);
+      if (loopMode && iterations === Infinity) {
+        console.log(`Iteration ${i}`);
+      } else {
+        console.log(`Iteration ${i} of ${iterations}`);
+      }
       console.log(`${"=".repeat(50)}\n`);
 
       // Create a fresh filtered PRD for each iteration (in case items were completed)
@@ -178,14 +200,47 @@ export async function run(args: string[]): Promise<void> {
       filteredPrdPath = tempPath;
 
       if (!hasIncomplete) {
-        console.log("\n" + "=".repeat(50));
-        if (category) {
-          console.log(`PRD COMPLETE - All "${category}" features already implemented!`);
-        } else {
-          console.log("PRD COMPLETE - All features already implemented!");
+        // Clean up temp file since we're not using it
+        try {
+          unlinkSync(filteredPrdPath);
+        } catch {
+          // Ignore cleanup errors
         }
-        console.log("=".repeat(50));
-        break;
+        filteredPrdPath = null;
+
+        if (loopMode) {
+          // In loop mode, wait for new items instead of exiting
+          console.log("\n" + "=".repeat(50));
+          if (category) {
+            console.log(`All "${category}" items complete. Waiting for new items...`);
+          } else {
+            console.log("All items complete. Waiting for new items...");
+          }
+          console.log(`(Checking every ${POLL_INTERVAL_MS / 1000} seconds. Press Ctrl+C to stop)`);
+          console.log("=".repeat(50));
+
+          // Poll for new items
+          while (true) {
+            await sleep(POLL_INTERVAL_MS);
+            const { hasIncomplete: newItems } = createFilteredPrd(paths.prd, category);
+            if (newItems) {
+              console.log("\nNew incomplete item(s) detected! Resuming...");
+              break;
+            }
+          }
+          // Decrement i so we don't skip an iteration count
+          i--;
+          continue;
+        } else {
+          console.log("\n" + "=".repeat(50));
+          if (category) {
+            console.log(`PRD COMPLETE - All "${category}" features already implemented!`);
+          } else {
+            console.log("PRD COMPLETE - All features already implemented!");
+          }
+          console.log("=".repeat(50));
+          break;
+        }
       }
 
       const categoryMsg = category ? ` (category: ${category})` : "";
@@ -208,20 +263,39 @@ export async function run(args: string[]): Promise<void> {
 
       // Check for completion signal
       if (output.includes("<promise>COMPLETE</promise>")) {
-        console.log("\n" + "=".repeat(50));
-        console.log("PRD COMPLETE - All features implemented!");
-        console.log("=".repeat(50));
+        if (loopMode) {
+          // In loop mode, wait for new items instead of exiting
+          console.log("\n" + "=".repeat(50));
+          console.log("PRD iteration complete. Waiting for new items...");
+          console.log(`(Checking every ${POLL_INTERVAL_MS / 1000} seconds. Press Ctrl+C to stop)`);
+          console.log("=".repeat(50));
 
-        // Send notification if configured
-        if (config.notifyCommand) {
-          const [cmd, ...cmdArgs] = config.notifyCommand.split(" ");
-          const notifyProc = spawn(cmd, [...cmdArgs, "Ralph: PRD Complete!"], { stdio: "ignore" });
-          notifyProc.on("error", () => {
-            // Notification command not available, ignore
-          });
+          // Poll for new items
+          while (true) {
+            await sleep(POLL_INTERVAL_MS);
+            const { hasIncomplete: newItems } = createFilteredPrd(paths.prd, category);
+            if (newItems) {
+              console.log("\nNew incomplete item(s) detected! Resuming...");
+              break;
+            }
+          }
+          continue;
+        } else {
+          console.log("\n" + "=".repeat(50));
+          console.log("PRD COMPLETE - All features implemented!");
+          console.log("=".repeat(50));
+
+          // Send notification if configured
+          if (config.notifyCommand) {
+            const [cmd, ...cmdArgs] = config.notifyCommand.split(" ");
+            const notifyProc = spawn(cmd, [...cmdArgs, "Ralph: PRD Complete!"], { stdio: "ignore" });
+            notifyProc.on("error", () => {
+              // Notification command not available, ignore
+            });
+          }
+
+          break;
         }
-
-        break;
       }
     }
   } finally {

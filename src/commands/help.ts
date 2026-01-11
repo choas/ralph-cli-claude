@@ -14,6 +14,7 @@ COMMANDS:
   help              Show this help message
 
 RUN OPTIONS:
+  --loop, -l                 Run continuously, waiting for new items when complete
   --category, -c <category>  Filter PRD items by category
                              Valid: ui, feature, bugfix, setup, development, testing, docs
 
@@ -33,6 +34,8 @@ EXAMPLES:
   ralph init                 # Initialize ralph for your project
   ralph once                 # Run single iteration
   ralph run 5                # Run 5 iterations
+  ralph run --loop           # Run continuously until interrupted
+  ralph run --loop -c feature  # Loop mode, only feature items
   ralph run 5 --category feature  # Run 5 iterations, only feature items
   ralph run 3 -c bugfix      # Run 3 iterations, only bugfix items
   ralph prd add              # Add new PRD entry
