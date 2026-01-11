@@ -42,6 +42,7 @@ EXAMPLES:
   ralph scripts              # Generate ralph.sh and ralph-once.sh
   ralph docker               # Generate Dockerfile for sandboxed env
   ralph docker --build       # Build Docker image
+  ralph docker --build --clean  # Clean and rebuild from scratch
   ralph docker --run         # Run container interactively
   ralph docker --clean       # Remove image and volumes
 

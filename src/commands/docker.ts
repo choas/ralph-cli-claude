@@ -436,6 +436,7 @@ async function cleanImage(imageName: string, ralphDir: string): Promise<void> {
 }
 
 export async function docker(args: string[]): Promise<void> {
+  const hasFlag = (flag: string): boolean => args.includes(flag);
   const flag = args[0];
 
   // Show help without requiring init
@@ -447,6 +448,7 @@ USAGE:
   ralph docker              Generate Dockerfile and scripts
   ralph docker -y           Generate files, overwrite without prompting
   ralph docker --build      Build image (always fetches latest Claude Code)
+  ralph docker --build --clean  Clean existing image and rebuild from scratch
   ralph docker --run        Run container with project mounted
   ralph docker --clean      Remove Docker image and associated resources
 
@@ -464,6 +466,7 @@ AUTHENTICATION:
 EXAMPLES:
   ralph docker                      # Generate files
   ralph docker --build              # Build image
+  ralph docker --build --clean      # Clean and rebuild from scratch
   ralph docker --run                # Start interactive shell
   ralph docker --clean              # Remove image and volumes
 
@@ -500,11 +503,16 @@ INSTALLING PACKAGES (works with Docker & Podman):
   // Get image name from config or generate default
   const imageName = config.imageName || `ralph-${basename(process.cwd()).toLowerCase().replace(/[^a-z0-9-]/g, "-")}`;
 
-  if (flag === "--build") {
+  // Handle --build --clean combination: clean first, then build
+  if (hasFlag("--build") && hasFlag("--clean")) {
+    await cleanImage(imageName, ralphDir);
+    console.log(""); // Add spacing between clean and build output
     await buildImage(ralphDir);
-  } else if (flag === "--run") {
+  } else if (hasFlag("--build")) {
+    await buildImage(ralphDir);
+  } else if (hasFlag("--run")) {
     await runContainer(ralphDir);
-  } else if (flag === "--clean") {
+  } else if (hasFlag("--clean")) {
     await cleanImage(imageName, ralphDir);
   } else {
     const force = flag === "-y" || flag === "--yes";
