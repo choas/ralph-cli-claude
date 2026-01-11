@@ -7,11 +7,15 @@ USAGE:
 COMMANDS:
   init              Initialize ralph in current project
   once              Run a single automation iteration
-  run <n>           Run n automation iterations
+  run <n> [opts]    Run n automation iterations
   prd <subcommand>  Manage PRD entries
   scripts           Generate shell scripts (for sandboxed environments)
   docker            Generate Docker sandbox environment
   help              Show this help message
+
+RUN OPTIONS:
+  --category, -c <category>  Filter PRD items by category
+                             Valid: ui, feature, bugfix, setup, development, testing, docs
 
 PRD SUBCOMMANDS:
   prd add           Add a new PRD entry (interactive)
@@ -24,6 +28,8 @@ EXAMPLES:
   ralph init                 # Initialize ralph for your project
   ralph once                 # Run single iteration
   ralph run 5                # Run 5 iterations
+  ralph run 5 --category feature  # Run 5 iterations, only feature items
+  ralph run 3 -c bugfix      # Run 3 iterations, only bugfix items
   ralph prd add              # Add new PRD entry
   ralph prd list             # Show all entries
   ralph prd status           # Show completion summary

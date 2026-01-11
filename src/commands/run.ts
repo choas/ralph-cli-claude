@@ -44,22 +44,30 @@ interface PrdItem {
   passes: boolean;
 }
 
+const CATEGORIES = ["ui", "feature", "bugfix", "setup", "development", "testing", "docs"];
+
 /**
  * Creates a filtered PRD file containing only incomplete items (passes: false).
+ * Optionally filters by category if specified.
  * Returns the path to the temp file, or null if all items pass.
  */
-function createFilteredPrd(prdPath: string): { tempPath: string; hasIncomplete: boolean } {
+function createFilteredPrd(prdPath: string, category?: string): { tempPath: string; hasIncomplete: boolean } {
   const content = readFileSync(prdPath, "utf-8");
   const items: PrdItem[] = JSON.parse(content);
 
-  const incompleteItems = items.filter(item => item.passes === false);
+  let filteredItems = items.filter(item => item.passes === false);
+
+  // Apply category filter if specified
+  if (category) {
+    filteredItems = filteredItems.filter(item => item.category === category);
+  }
 
   const tempPath = join(tmpdir(), `ralph-prd-filtered-${Date.now()}.json`);
-  writeFileSync(tempPath, JSON.stringify(incompleteItems, null, 2));
+  writeFileSync(tempPath, JSON.stringify(filteredItems, null, 2));
 
   return {
     tempPath,
-    hasIncomplete: incompleteItems.length > 0
+    hasIncomplete: filteredItems.length > 0
   };
 }
 
@@ -103,11 +111,38 @@ async function runIteration(prompt: string, paths: ReturnType<typeof getPaths>, 
 }
 
 export async function run(args: string[]): Promise<void> {
-  const iterations = parseInt(args[0]);
+  // Parse --category flag
+  let category: string | undefined;
+  const filteredArgs: string[] = [];
+
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === "--category" || args[i] === "-c") {
+      if (i + 1 < args.length) {
+        category = args[i + 1];
+        i++; // Skip the category value
+      } else {
+        console.error("Error: --category requires a value");
+        console.error(`Valid categories: ${CATEGORIES.join(", ")}`);
+        process.exit(1);
+      }
+    } else {
+      filteredArgs.push(args[i]);
+    }
+  }
+
+  // Validate category if provided
+  if (category && !CATEGORIES.includes(category)) {
+    console.error(`Error: Invalid category "${category}"`);
+    console.error(`Valid categories: ${CATEGORIES.join(", ")}`);
+    process.exit(1);
+  }
+
+  const iterations = parseInt(filteredArgs[0]);
 
   if (!iterations || iterations < 1 || isNaN(iterations)) {
-    console.error("Usage: ralph run <iterations>");
+    console.error("Usage: ralph run <iterations> [--category <category>]");
     console.error("  <iterations> must be a positive integer");
+    console.error(`  <category> must be one of: ${CATEGORIES.join(", ")}`);
     process.exit(1);
   }
 
@@ -120,7 +155,11 @@ export async function run(args: string[]): Promise<void> {
   // Check if we're running in a sandboxed container environment
   const sandboxed = isRunningInContainer();
 
-  console.log(`Starting ${iterations} ralph iteration(s)...\n`);
+  console.log(`Starting ${iterations} ralph iteration(s)...`);
+  if (category) {
+    console.log(`Filtering PRD items by category: ${category}`);
+  }
+  console.log();
   if (sandboxed) {
     console.log("Detected container environment - running with --dangerously-skip-permissions\n");
   }
@@ -135,17 +174,22 @@ export async function run(args: string[]): Promise<void> {
       console.log(`${"=".repeat(50)}\n`);
 
       // Create a fresh filtered PRD for each iteration (in case items were completed)
-      const { tempPath, hasIncomplete } = createFilteredPrd(paths.prd);
+      const { tempPath, hasIncomplete } = createFilteredPrd(paths.prd, category);
       filteredPrdPath = tempPath;
 
       if (!hasIncomplete) {
         console.log("\n" + "=".repeat(50));
-        console.log("PRD COMPLETE - All features already implemented!");
+        if (category) {
+          console.log(`PRD COMPLETE - All "${category}" features already implemented!`);
+        } else {
+          console.log("PRD COMPLETE - All features already implemented!");
+        }
         console.log("=".repeat(50));
         break;
       }
 
-      console.log(`Filtered PRD: sending only incomplete items to Claude\n`);
+      const categoryMsg = category ? ` (category: ${category})` : "";
+      console.log(`Filtered PRD: sending only incomplete items${categoryMsg} to Claude\n`);
 
       const { exitCode, output } = await runIteration(prompt, paths, sandboxed, filteredPrdPath);
 
