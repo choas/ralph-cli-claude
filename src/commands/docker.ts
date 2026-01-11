@@ -346,12 +346,46 @@ async function buildImage(ralphDir: string): Promise<void> {
   });
 }
 
-async function runContainer(ralphDir: string): Promise<void> {
-  const dockerDir = join(ralphDir, DOCKER_DIR);
+async function imageExists(imageName: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const proc = spawn("docker", ["images", "-q", imageName], {
+      stdio: ["ignore", "pipe", "ignore"],
+    });
 
-  if (!existsSync(join(dockerDir, "Dockerfile"))) {
-    console.error("Dockerfile not found. Run 'ralph docker' first.");
-    process.exit(1);
+    let output = "";
+    proc.stdout.on("data", (data) => {
+      output += data.toString();
+    });
+
+    proc.on("close", () => {
+      // If output is non-empty, image exists
+      resolve(output.trim().length > 0);
+    });
+
+    proc.on("error", () => {
+      resolve(false);
+    });
+  });
+}
+
+async function runContainer(ralphDir: string, imageName: string, language: string): Promise<void> {
+  const dockerDir = join(ralphDir, DOCKER_DIR);
+  const dockerfileExists = existsSync(join(dockerDir, "Dockerfile"));
+  const hasImage = await imageExists(imageName);
+
+  // Auto-init and build if docker folder or image doesn't exist
+  if (!dockerfileExists || !hasImage) {
+    if (!dockerfileExists) {
+      console.log("Docker folder not found. Initializing docker setup...\n");
+      await generateFiles(ralphDir, language, imageName, true);
+      console.log("");
+    }
+
+    if (!hasImage) {
+      console.log("Docker image not found. Building image...\n");
+      await buildImage(ralphDir);
+      console.log("");
+    }
   }
 
   console.log("Starting Docker container...\n");
@@ -449,7 +483,7 @@ USAGE:
   ralph docker -y           Generate files, overwrite without prompting
   ralph docker --build      Build image (always fetches latest Claude Code)
   ralph docker --build --clean  Clean existing image and rebuild from scratch
-  ralph docker --run        Run container with project mounted
+  ralph docker --run        Run container (auto-init and build if needed)
   ralph docker --clean      Remove Docker image and associated resources
 
 FILES GENERATED:
@@ -511,7 +545,7 @@ INSTALLING PACKAGES (works with Docker & Podman):
   } else if (hasFlag("--build")) {
     await buildImage(ralphDir);
   } else if (hasFlag("--run")) {
-    await runContainer(ralphDir);
+    await runContainer(ralphDir, imageName, config.language);
   } else if (hasFlag("--clean")) {
     await cleanImage(imageName, ralphDir);
   } else {
