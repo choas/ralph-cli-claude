@@ -135,13 +135,13 @@ TECHNOLOGY STACK:
   return `You are an AI developer working on this project. Your task is to implement features from the PRD.
 ${techSection}
 INSTRUCTIONS:
-1. Read the @prd.json file to find the highest priority feature that has "passes": false
+1. Read the @.ralph/prd.json file to find the highest priority feature that has "passes": false
 2. Implement that feature completely
 3. Verify your changes work by running:
    - Type/build check: ${config.checkCommand}
    - Tests: ${config.testCommand}
 4. Update the PRD entry to set "passes": true once verified
-5. Append a brief note about what you did to @progress.txt
+5. Append a brief note about what you did to @.ralph/progress.txt
 6. Create a git commit with a descriptive message for this feature
 7. Only work on ONE feature per execution
 
