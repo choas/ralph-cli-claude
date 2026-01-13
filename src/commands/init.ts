@@ -1,7 +1,7 @@
 import { existsSync, writeFileSync, mkdirSync, copyFileSync } from "fs";
 import { join, basename, dirname } from "path";
 import { fileURLToPath } from "url";
-import { LANGUAGES, generatePrompt, DEFAULT_PRD, DEFAULT_PROGRESS, type LanguageConfig, type TechnologyStack } from "../templates/prompts.js";
+import { LANGUAGES, generatePromptTemplate, DEFAULT_PRD, DEFAULT_PROGRESS, type LanguageConfig, type TechnologyStack } from "../templates/prompts.js";
 import { promptSelect, promptConfirm, promptInput, promptMultiSelect } from "../utils/prompt.js";
 
 // Get package root directory (works for both dev and installed package)
@@ -109,8 +109,8 @@ export async function init(args: string[]): Promise<void> {
   writeFileSync(configPath, JSON.stringify(configData, null, 2) + "\n");
   console.log(`\nCreated ${RALPH_DIR}/${CONFIG_FILE}`);
 
-  // Write prompt file (ask if exists)
-  const prompt = generatePrompt(finalConfig, selectedTechnologies);
+  // Write prompt file (ask if exists) - uses template with $variables
+  const prompt = generatePromptTemplate();
   const promptPath = join(ralphDir, PROMPT_FILE);
 
   if (existsSync(promptPath)) {

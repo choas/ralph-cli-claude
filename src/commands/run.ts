@@ -3,6 +3,7 @@ import { existsSync, readFileSync, writeFileSync, unlinkSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 import { checkFilesExist, loadConfig, loadPrompt, getPaths } from "../utils/config.js";
+import { resolvePromptVariables } from "../templates/prompts.js";
 
 /**
  * Detects if we're running inside a container (Docker or Podman).
@@ -206,7 +207,13 @@ export async function run(args: string[]): Promise<void> {
   checkFilesExist();
 
   const config = loadConfig();
-  const prompt = loadPrompt();
+  const template = loadPrompt();
+  const prompt = resolvePromptVariables(template, {
+    language: config.language,
+    checkCommand: config.checkCommand,
+    testCommand: config.testCommand,
+    technologies: config.technologies,
+  });
   const paths = getPaths();
 
   // Check if we're running in a sandboxed container environment

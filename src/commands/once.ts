@@ -1,10 +1,18 @@
 import { spawn } from "child_process";
-import { checkFilesExist, loadPrompt, getPaths } from "../utils/config.js";
+import { checkFilesExist, loadConfig, loadPrompt, getPaths } from "../utils/config.js";
+import { resolvePromptVariables } from "../templates/prompts.js";
 
 export async function once(_args: string[]): Promise<void> {
   checkFilesExist();
 
-  const prompt = loadPrompt();
+  const config = loadConfig();
+  const template = loadPrompt();
+  const prompt = resolvePromptVariables(template, {
+    language: config.language,
+    checkCommand: config.checkCommand,
+    testCommand: config.testCommand,
+    technologies: config.technologies,
+  });
   const paths = getPaths();
 
   console.log("Starting single ralph iteration...\n");

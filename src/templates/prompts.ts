@@ -134,29 +134,20 @@ export const LANGUAGES: Record<string, LanguageConfig> = {
   },
 };
 
-export function generatePrompt(config: LanguageConfig, technologies?: string[]): string {
-  let techSection = "";
-  if (technologies && technologies.length > 0) {
-    techSection = `
-TECHNOLOGY STACK:
-- Language/Runtime: ${config.name}
-- Technologies: ${technologies.join(", ")}
-`;
-  } else {
-    techSection = `
-TECHNOLOGY STACK:
-- Language/Runtime: ${config.name}
-`;
-  }
-
+// Generate the prompt template with $variables (stored in prompt.md)
+export function generatePromptTemplate(): string {
   return `You are an AI developer working on this project. Your task is to implement features from the PRD.
-${techSection}
+
+TECHNOLOGY STACK:
+- Language/Runtime: $language
+- Technologies: $technologies
+
 INSTRUCTIONS:
 1. Read the @.ralph/prd.json file to find the highest priority feature that has "passes": false
 2. Implement that feature completely
 3. Verify your changes work by running:
-   - Type/build check: ${config.checkCommand}
-   - Tests: ${config.testCommand}
+   - Type/build check: $checkCommand
+   - Tests: $testCommand
 4. Update the PRD entry to set "passes": true once verified
 5. Append a brief note about what you did to @.ralph/progress.txt
 6. Create a git commit with a descriptive message for this feature
@@ -169,6 +160,35 @@ IMPORTANT:
 - If the PRD is fully complete (all items pass), output: <promise>COMPLETE</promise>
 
 Now, read the PRD and begin working on the highest priority incomplete feature.`;
+}
+
+// Resolve template variables using config values
+export function resolvePromptVariables(template: string, config: {
+  language: string;
+  checkCommand: string;
+  testCommand: string;
+  technologies?: string[];
+}): string {
+  const languageConfig = LANGUAGES[config.language];
+  const languageName = languageConfig?.name || config.language;
+  const technologies = config.technologies?.length ? config.technologies.join(", ") : "(none specified)";
+
+  return template
+    .replace(/\$language/g, languageName)
+    .replace(/\$technologies/g, technologies)
+    .replace(/\$checkCommand/g, config.checkCommand)
+    .replace(/\$testCommand/g, config.testCommand);
+}
+
+// Legacy function for backwards compatibility - generates fully resolved prompt
+export function generatePrompt(config: LanguageConfig, technologies?: string[]): string {
+  const template = generatePromptTemplate();
+  return resolvePromptVariables(template, {
+    language: Object.keys(LANGUAGES).find(k => LANGUAGES[k].name === config.name) || "none",
+    checkCommand: config.checkCommand,
+    testCommand: config.testCommand,
+    technologies,
+  });
 }
 
 export const DEFAULT_PRD = `[
