@@ -26,8 +26,9 @@ RUN apt-get update && apt-get install -y \\
 RUN pip3 install --break-system-packages mypy pytest
 `,
   go: `
-# Install Go
-RUN curl -fsSL https://go.dev/dl/go1.22.0.linux-amd64.tar.gz | tar -C /usr/local -xzf -
+# Install Go (architecture-aware)
+RUN ARCH=$(dpkg --print-architecture) && \\
+    curl -fsSL "https://go.dev/dl/go1.22.0.linux-\${ARCH}.tar.gz" | tar -C /usr/local -xzf -
 ENV PATH="/usr/local/go/bin:/home/node/go/bin:$PATH"
 ENV GOPATH="/home/node/go"
 `,
@@ -36,20 +37,33 @@ ENV GOPATH="/home/node/go"
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/home/node/.cargo/bin:$PATH"
 `,
-  java: `
-# Install Java and Maven
-RUN apt-get update && apt-get install -y \\
-    openjdk-17-jdk \\
-    maven \\
-    && rm -rf /var/lib/apt/lists/*
-ENV JAVA_HOME="/usr/lib/jvm/java-17-openjdk-amd64"
+  none: `
+# Custom language - add your dependencies here
 `,
-  kotlin: `
-# Install Kotlin and Gradle
+};
+
+// Java snippet generator (supports configurable Java version)
+function getJavaSnippet(javaVersion: number = 17): string {
+  return `
+# Install Java ${javaVersion} and Maven
 RUN apt-get update && apt-get install -y \\
-    openjdk-17-jdk \\
-    && rm -rf /var/lib/apt/lists/*
-ENV JAVA_HOME="/usr/lib/jvm/java-17-openjdk-amd64"
+    openjdk-${javaVersion}-jdk \\
+    maven \\
+    && rm -rf /var/lib/apt/lists/* \\
+    && ln -s /usr/lib/jvm/java-${javaVersion}-openjdk-$(dpkg --print-architecture) /usr/lib/jvm/java-${javaVersion}-openjdk
+ENV JAVA_HOME="/usr/lib/jvm/java-${javaVersion}-openjdk"
+`;
+}
+
+// Kotlin snippet generator (supports configurable Java version)
+function getKotlinSnippet(javaVersion: number = 17): string {
+  return `
+# Install Kotlin and Gradle (Java ${javaVersion})
+RUN apt-get update && apt-get install -y \\
+    openjdk-${javaVersion}-jdk \\
+    && rm -rf /var/lib/apt/lists/* \\
+    && ln -s /usr/lib/jvm/java-${javaVersion}-openjdk-$(dpkg --print-architecture) /usr/lib/jvm/java-${javaVersion}-openjdk
+ENV JAVA_HOME="/usr/lib/jvm/java-${javaVersion}-openjdk"
 # Install Gradle
 RUN curl -fsSL https://services.gradle.org/distributions/gradle-8.5-bin.zip -o /tmp/gradle.zip && \\
     unzip -d /opt /tmp/gradle.zip && \\
@@ -60,14 +74,22 @@ RUN curl -fsSL https://github.com/JetBrains/kotlin/releases/download/v1.9.22/kot
     unzip -d /opt /tmp/kotlin.zip && \\
     rm /tmp/kotlin.zip
 ENV PATH="/opt/kotlinc/bin:$PATH"
-`,
-  none: `
-# Custom language - add your dependencies here
-`,
-};
+`;
+}
 
-function generateDockerfile(language: string): string {
-  const languageSnippet = LANGUAGE_SNIPPETS[language] || LANGUAGE_SNIPPETS.none;
+// Get language snippet, with special handling for Java/Kotlin
+function getLanguageSnippet(language: string, javaVersion?: number): string {
+  if (language === "java") {
+    return getJavaSnippet(javaVersion);
+  }
+  if (language === "kotlin") {
+    return getKotlinSnippet(javaVersion);
+  }
+  return LANGUAGE_SNIPPETS[language] || LANGUAGE_SNIPPETS.none;
+}
+
+function generateDockerfile(language: string, javaVersion?: number): string {
+  const languageSnippet = getLanguageSnippet(language, javaVersion);
 
   return `# Ralph CLI Sandbox Environment
 # Based on Claude Code devcontainer
@@ -294,7 +316,7 @@ dist
 *.log
 `;
 
-async function generateFiles(ralphDir: string, language: string, imageName: string, force: boolean = false): Promise<void> {
+async function generateFiles(ralphDir: string, language: string, imageName: string, force: boolean = false, javaVersion?: number): Promise<void> {
   const dockerDir = join(ralphDir, DOCKER_DIR);
 
   // Create docker directory
@@ -304,7 +326,7 @@ async function generateFiles(ralphDir: string, language: string, imageName: stri
   }
 
   const files = [
-    { name: "Dockerfile", content: generateDockerfile(language) },
+    { name: "Dockerfile", content: generateDockerfile(language, javaVersion) },
     { name: "init-firewall.sh", content: FIREWALL_SCRIPT },
     { name: "docker-compose.yml", content: generateDockerCompose(imageName) },
     { name: ".dockerignore", content: DOCKERIGNORE },
@@ -385,7 +407,7 @@ async function imageExists(imageName: string): Promise<boolean> {
   });
 }
 
-async function runContainer(ralphDir: string, imageName: string, language: string): Promise<void> {
+async function runContainer(ralphDir: string, imageName: string, language: string, javaVersion?: number): Promise<void> {
   const dockerDir = join(ralphDir, DOCKER_DIR);
   const dockerfileExists = existsSync(join(dockerDir, "Dockerfile"));
   const hasImage = await imageExists(imageName);
@@ -394,7 +416,7 @@ async function runContainer(ralphDir: string, imageName: string, language: strin
   if (!dockerfileExists || !hasImage) {
     if (!dockerfileExists) {
       console.log("Docker folder not found. Initializing docker setup...\n");
-      await generateFiles(ralphDir, language, imageName, true);
+      await generateFiles(ralphDir, language, imageName, true, javaVersion);
       console.log("");
     }
 
@@ -692,14 +714,17 @@ INSTALLING PACKAGES (works with Docker & Podman):
   } else if (hasFlag("--build")) {
     await buildImage(ralphDir);
   } else if (hasFlag("--run")) {
-    await runContainer(ralphDir, imageName, config.language);
+    await runContainer(ralphDir, imageName, config.language, config.javaVersion);
   } else if (hasFlag("--clean")) {
     await cleanImage(imageName, ralphDir);
   } else {
     const force = flag === "-y" || flag === "--yes";
     console.log(`Generating Docker files for: ${config.language}`);
+    if ((config.language === "java" || config.language === "kotlin") && config.javaVersion) {
+      console.log(`Java version: ${config.javaVersion}`);
+    }
     console.log(`Image name: ${imageName}\n`);
-    await generateFiles(ralphDir, config.language, imageName, force);
+    await generateFiles(ralphDir, config.language, imageName, force, config.javaVersion);
 
     console.log(`
 Docker files generated in .ralph/docker/
