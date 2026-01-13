@@ -69,34 +69,31 @@ export async function promptMultiSelect(message: string, options: string[]): Pro
   options.forEach((opt, i) => {
     console.log(`  ${i + 1}. ${opt}`);
   });
-  console.log(`  ${options.length + 1}. [Add custom technology]`);
   console.log(`  0. [Done selecting]`);
 
   const prompt = createPrompt();
   const selected: string[] = [];
   const customTechs: string[] = [];
 
-  console.log("\nEnter numbers one at a time (0 when done):");
+  console.log("\nEnter a number to select, or type text to add custom technology (0 when done):");
 
   while (true) {
     const answer = await prompt.question("> ");
-    const num = parseInt(answer.trim());
+    const trimmed = answer.trim();
 
-    if (num === 0) {
+    if (trimmed === "0") {
       prompt.close();
       return [...selected, ...customTechs];
     }
 
-    if (num === options.length + 1) {
-      const customName = await prompt.question("Enter custom technology name: ");
-      if (customName.trim()) {
-        customTechs.push(customName.trim());
-        console.log(`Added: ${customName.trim()}`);
-      }
+    if (trimmed === "") {
       continue;
     }
 
-    if (num >= 1 && num <= options.length) {
+    const num = parseInt(trimmed);
+
+    // Check if input is a valid number selection
+    if (!isNaN(num) && num >= 1 && num <= options.length) {
       const selectedOption = options[num - 1];
       if (!selected.includes(selectedOption)) {
         selected.push(selectedOption);
@@ -104,8 +101,17 @@ export async function promptMultiSelect(message: string, options: string[]): Pro
       } else {
         console.log(`Already selected: ${selectedOption}`);
       }
+    } else if (!isNaN(num)) {
+      // Invalid number
+      console.log(`Invalid number. Enter 1-${options.length}, or type text for custom technology.`);
     } else {
-      console.log("Invalid selection.");
+      // Text input - treat as custom technology
+      if (!customTechs.includes(trimmed) && !selected.some(s => s.toLowerCase().includes(trimmed.toLowerCase()))) {
+        customTechs.push(trimmed);
+        console.log(`Added custom: ${trimmed}`);
+      } else {
+        console.log(`Already added: ${trimmed}`);
+      }
     }
   }
 }
