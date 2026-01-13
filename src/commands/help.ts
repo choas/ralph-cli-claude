@@ -5,13 +5,16 @@ USAGE:
   ralph <command> [options]
 
 COMMANDS:
-  init              Initialize ralph in current project
+  init [opts]       Initialize ralph in current project
   once              Run a single automation iteration
   run <n> [opts]    Run n automation iterations
   prd <subcommand>  Manage PRD entries
   scripts           Generate shell scripts (for sandboxed environments)
   docker            Generate Docker sandbox environment
   help              Show this help message
+
+INIT OPTIONS:
+  --tech-stack, -t           Enable technology stack selection prompt
 
 RUN OPTIONS:
   --loop, -l                 Run continuously, waiting for new items when complete
@@ -31,7 +34,8 @@ PRD LIST OPTIONS:
                              Valid: ui, feature, bugfix, setup, development, testing, docs
 
 EXAMPLES:
-  ralph init                 # Initialize ralph for your project
+  ralph init                 # Initialize ralph (language selection only)
+  ralph init --tech-stack    # Initialize with technology stack selection
   ralph once                 # Run single iteration
   ralph run 5                # Run 5 iterations
   ralph run --loop           # Run continuously until interrupted

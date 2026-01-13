@@ -16,9 +16,14 @@ const PRD_FILE = "prd.json";
 const PROGRESS_FILE = "progress.txt";
 const PRD_GUIDE_FILE = "HOW-TO-WRITE-PRDs.md";
 
-export async function init(_args: string[]): Promise<void> {
+function hasFlag(args: string[], ...flags: string[]): boolean {
+  return args.some(arg => flags.includes(arg));
+}
+
+export async function init(args: string[]): Promise<void> {
   const cwd = process.cwd();
   const ralphDir = join(cwd, RALPH_DIR);
+  const showTechStack = hasFlag(args, "--tech-stack", "-t");
 
   console.log("Initializing ralph in current directory...\n");
 
@@ -43,10 +48,10 @@ export async function init(_args: string[]): Promise<void> {
   const selectedKey = languageKeys[selectedIndex];
   const config = LANGUAGES[selectedKey];
 
-  // Select technology stack if available
+  // Select technology stack if available (only when --tech-stack flag is provided)
   let selectedTechnologies: string[] = [];
 
-  if (config.technologies && config.technologies.length > 0) {
+  if (showTechStack && config.technologies && config.technologies.length > 0) {
     const techOptions = config.technologies.map(t => `${t.name} - ${t.description}`);
     const techNames = config.technologies.map(t => t.name);
 
