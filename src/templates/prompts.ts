@@ -109,6 +109,23 @@ export const LANGUAGES: Record<string, LanguageConfig> = {
       { name: "MySQL", description: "Popular SQL database" },
     ],
   },
+  kotlin: {
+    name: "Kotlin",
+    checkCommand: "gradle build",
+    testCommand: "gradle test",
+    description: "Kotlin with Gradle",
+    technologies: [
+      { name: "Ktor", description: "Asynchronous web framework" },
+      { name: "Spring Boot", description: "Production-ready framework" },
+      { name: "Exposed", description: "Kotlin SQL framework" },
+      { name: "Koin", description: "Dependency injection framework" },
+      { name: "Kotest", description: "Kotlin testing framework" },
+      { name: "kotlinx.coroutines", description: "Coroutines for async programming" },
+      { name: "kotlinx.serialization", description: "Multiplatform serialization" },
+      { name: "PostgreSQL", description: "Advanced SQL database" },
+      { name: "MongoDB", description: "NoSQL document database" },
+    ],
+  },
   none: {
     name: "None (custom)",
     checkCommand: "echo 'no check configured'",

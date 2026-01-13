@@ -44,6 +44,23 @@ RUN apt-get update && apt-get install -y \\
     && rm -rf /var/lib/apt/lists/*
 ENV JAVA_HOME="/usr/lib/jvm/java-17-openjdk-amd64"
 `,
+  kotlin: `
+# Install Kotlin and Gradle
+RUN apt-get update && apt-get install -y \\
+    openjdk-17-jdk \\
+    && rm -rf /var/lib/apt/lists/*
+ENV JAVA_HOME="/usr/lib/jvm/java-17-openjdk-amd64"
+# Install Gradle
+RUN curl -fsSL https://services.gradle.org/distributions/gradle-8.5-bin.zip -o /tmp/gradle.zip && \\
+    unzip -d /opt /tmp/gradle.zip && \\
+    rm /tmp/gradle.zip
+ENV PATH="/opt/gradle-8.5/bin:$PATH"
+# Install Kotlin compiler
+RUN curl -fsSL https://github.com/JetBrains/kotlin/releases/download/v1.9.22/kotlin-compiler-1.9.22.zip -o /tmp/kotlin.zip && \\
+    unzip -d /opt /tmp/kotlin.zip && \\
+    rm /tmp/kotlin.zip
+ENV PATH="/opt/kotlinc/bin:$PATH"
+`,
   none: `
 # Custom language - add your dependencies here
 `,
