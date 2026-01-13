@@ -304,9 +304,6 @@ export async function run(args: string[]): Promise<void> {
         }
       }
 
-      const categoryMsg = category ? ` (category: ${category})` : "";
-      console.log(`Filtered PRD: sending only incomplete items${categoryMsg} to Claude\n`);
-
       const { exitCode, output } = await runIteration(prompt, paths, sandboxed, filteredPrdPath);
 
       // Clean up temp file after each iteration
