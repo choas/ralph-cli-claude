@@ -135,10 +135,34 @@ function formatElapsedTime(startTime: number, endTime: number): string {
   return parts.join(" ");
 }
 
+/**
+ * Counts total and incomplete items in the PRD.
+ * Optionally filters by category if specified.
+ */
+function countPrdItems(prdPath: string, category?: string): { total: number; incomplete: number; complete: number } {
+  const content = readFileSync(prdPath, "utf-8");
+  const items: PrdItem[] = JSON.parse(content);
+
+  let filteredItems = items;
+  if (category) {
+    filteredItems = items.filter(item => item.category === category);
+  }
+
+  const complete = filteredItems.filter(item => item.passes === true).length;
+  const incomplete = filteredItems.filter(item => item.passes === false).length;
+
+  return {
+    total: filteredItems.length,
+    complete,
+    incomplete
+  };
+}
+
 export async function run(args: string[]): Promise<void> {
   // Parse flags
   let category: string | undefined;
   let loopMode = false;
+  let allMode = false;
   const filteredArgs: string[] = [];
 
   for (let i = 0; i < args.length; i++) {
@@ -153,6 +177,8 @@ export async function run(args: string[]): Promise<void> {
       }
     } else if (args[i] === "--loop" || args[i] === "-l") {
       loopMode = true;
+    } else if (args[i] === "--all" || args[i] === "-a") {
+      allMode = true;
     } else {
       filteredArgs.push(args[i]);
     }
@@ -165,12 +191,13 @@ export async function run(args: string[]): Promise<void> {
     process.exit(1);
   }
 
-  // In loop mode, iterations argument is optional (defaults to unlimited)
-  const iterations = loopMode ? (parseInt(filteredArgs[0]) || Infinity) : parseInt(filteredArgs[0]);
+  // In loop mode or all mode, iterations argument is optional (defaults to unlimited)
+  const iterations = (loopMode || allMode) ? (parseInt(filteredArgs[0]) || Infinity) : parseInt(filteredArgs[0]);
 
-  if (!loopMode && (!iterations || iterations < 1 || isNaN(iterations))) {
+  if (!loopMode && !allMode && (!iterations || iterations < 1 || isNaN(iterations))) {
     console.error("Usage: ralph run <iterations> [--category <category>]");
     console.error("       ralph run --loop [--category <category>]");
+    console.error("       ralph run --all [--category <category>]");
     console.error("  <iterations> must be a positive integer");
     console.error(`  <category> must be one of: ${CATEGORIES.join(", ")}`);
     process.exit(1);
@@ -185,7 +212,11 @@ export async function run(args: string[]): Promise<void> {
   // Check if we're running in a sandboxed container environment
   const sandboxed = isRunningInContainer();
 
-  if (loopMode) {
+  if (allMode) {
+    const counts = countPrdItems(paths.prd, category);
+    console.log("Starting ralph in --all mode (runs until all tasks complete)...");
+    console.log(`PRD Status: ${counts.complete}/${counts.total} complete, ${counts.incomplete} remaining`);
+  } else if (loopMode) {
     console.log("Starting ralph in loop mode (runs until interrupted)...");
   } else {
     console.log(`Starting ${iterations} ralph iteration(s)...`);
@@ -207,7 +238,10 @@ export async function run(args: string[]): Promise<void> {
   try {
     for (let i = 1; i <= iterations; i++) {
       console.log(`\n${"=".repeat(50)}`);
-      if (loopMode && iterations === Infinity) {
+      if (allMode) {
+        const counts = countPrdItems(paths.prd, category);
+        console.log(`Iteration ${i} | Progress: ${counts.complete}/${counts.total} complete`);
+      } else if (loopMode && iterations === Infinity) {
         console.log(`Iteration ${i}`);
       } else {
         console.log(`Iteration ${i} of ${iterations}`);
@@ -252,7 +286,15 @@ export async function run(args: string[]): Promise<void> {
           continue;
         } else {
           console.log("\n" + "=".repeat(50));
-          if (category) {
+          if (allMode) {
+            const counts = countPrdItems(paths.prd, category);
+            if (category) {
+              console.log(`PRD COMPLETE - All "${category}" tasks finished!`);
+            } else {
+              console.log("PRD COMPLETE - All tasks finished!");
+            }
+            console.log(`Final Status: ${counts.complete}/${counts.total} complete`);
+          } else if (category) {
             console.log(`PRD COMPLETE - All "${category}" features already implemented!`);
           } else {
             console.log("PRD COMPLETE - All features already implemented!");
@@ -301,7 +343,13 @@ export async function run(args: string[]): Promise<void> {
           continue;
         } else {
           console.log("\n" + "=".repeat(50));
-          console.log("PRD COMPLETE - All features implemented!");
+          if (allMode) {
+            const counts = countPrdItems(paths.prd, category);
+            console.log("PRD COMPLETE - All tasks finished!");
+            console.log(`Final Status: ${counts.complete}/${counts.total} complete`);
+          } else {
+            console.log("PRD COMPLETE - All features implemented!");
+          }
           console.log("=".repeat(50));
 
           // Send notification if configured

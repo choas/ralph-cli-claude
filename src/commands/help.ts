@@ -17,6 +17,7 @@ INIT OPTIONS:
   --tech-stack, -t           Enable technology stack selection prompt
 
 RUN OPTIONS:
+  --all, -a                  Run until all tasks are complete, showing progress
   --loop, -l                 Run continuously, waiting for new items when complete
   --category, -c <category>  Filter PRD items by category
                              Valid: ui, feature, bugfix, setup, development, testing, docs
@@ -38,6 +39,8 @@ EXAMPLES:
   ralph init --tech-stack    # Initialize with technology stack selection
   ralph once                 # Run single iteration
   ralph run 5                # Run 5 iterations
+  ralph run --all            # Run until all tasks complete (shows progress)
+  ralph run --all -c feature # Complete all feature tasks only
   ralph run --loop           # Run continuously until interrupted
   ralph run --loop -c feature  # Loop mode, only feature items
   ralph run 5 --category feature  # Run 5 iterations, only feature items
