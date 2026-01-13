@@ -117,6 +117,24 @@ function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+/**
+ * Formats elapsed time in a human-readable format.
+ * Returns a string like "1h 23m 45s" or "5m 30s" or "45s"
+ */
+function formatElapsedTime(startTime: number, endTime: number): string {
+  const totalSeconds = Math.floor((endTime - startTime) / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  const parts: string[] = [];
+  if (hours > 0) parts.push(`${hours}h`);
+  if (minutes > 0) parts.push(`${minutes}m`);
+  if (seconds > 0 || parts.length === 0) parts.push(`${seconds}s`);
+
+  return parts.join(" ");
+}
+
 export async function run(args: string[]): Promise<void> {
   // Parse flags
   let category: string | undefined;
@@ -184,6 +202,7 @@ export async function run(args: string[]): Promise<void> {
   let filteredPrdPath: string | null = null;
 
   const POLL_INTERVAL_MS = 30000; // 30 seconds between checks when waiting for new items
+  const startTime = Date.now();
 
   try {
     for (let i = 1; i <= iterations; i++) {
@@ -309,5 +328,7 @@ export async function run(args: string[]): Promise<void> {
     }
   }
 
-  console.log("\nRalph run finished.");
+  const endTime = Date.now();
+  const elapsed = formatElapsedTime(startTime, endTime);
+  console.log(`\nRalph run finished in ${elapsed}.`);
 }
