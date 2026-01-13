@@ -10,6 +10,7 @@ import { run } from "./commands/run.js";
 import { prd } from "./commands/prd.js";
 import { scripts } from "./commands/scripts.js";
 import { docker } from "./commands/docker.js";
+import { prompt } from "./commands/prompt.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -26,6 +27,7 @@ const commands: Record<string, (args: string[]) => Promise<void> | void> = {
   once,
   run,
   prd,
+  prompt,
   scripts,
   docker,
 };

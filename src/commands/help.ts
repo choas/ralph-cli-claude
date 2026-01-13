@@ -9,6 +9,7 @@ COMMANDS:
   once              Run a single automation iteration
   run <n> [opts]    Run n automation iterations
   prd <subcommand>  Manage PRD entries
+  prompt [opts]     Display resolved prompt (for testing in Claude Code)
   scripts           Generate shell scripts (for sandboxed environments)
   docker            Generate Docker sandbox environment
   help              Show this help message
@@ -49,6 +50,8 @@ EXAMPLES:
   ralph prd list             # Show all entries
   ralph prd list -c feature  # Show only feature entries
   ralph prd status           # Show completion summary
+  ralph prompt               # Display resolved prompt
+  ralph prompt --raw         # Display template with $variables
   ralph scripts              # Generate ralph.sh and ralph-once.sh
   ralph docker               # Generate Dockerfile for sandboxed env
   ralph docker --build       # Build Docker image
@@ -59,8 +62,8 @@ EXAMPLES:
 CONFIGURATION:
   After running 'ralph init', you'll have:
   .ralph/
-  ├── config.json      Project configuration
-  ├── prompt.md        Shared prompt template
+  ├── config.json      Project configuration (language, commands, javaVersion)
+  ├── prompt.md        Prompt template with $variables ($language, $checkCommand, etc.)
   ├── prd.json         Product requirements document
   └── progress.txt     Progress tracking file
 `;
