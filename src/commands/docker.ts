@@ -587,9 +587,10 @@ async function cleanImage(imageName: string, ralphDir: string): Promise<void> {
     });
   });
 
-  // For Podman: clean up any orphaned pods matching our pattern
+  // For Podman: clean up any orphaned pods matching this specific project
+  // Use imageName to ensure we only clean this project's pods, not other ralph projects
   await new Promise<void>((resolve) => {
-    const proc = spawn("docker", ["pod", "ls", "-q", "--filter", `name=docker`], {
+    const proc = spawn("docker", ["pod", "ls", "-q", "--filter", `name=${imageName}`], {
       stdio: ["ignore", "pipe", "ignore"],
     });
 
@@ -619,10 +620,11 @@ async function cleanImage(imageName: string, ralphDir: string): Promise<void> {
     });
   });
 
-  // Clean up the docker_default network if it exists and is empty
+  // Clean up project-specific network (named after imageName, not generic docker_default)
+  const networkName = `docker_${imageName}_default`;
   await new Promise<void>((resolve) => {
-    const proc = spawn("docker", ["network", "rm", "docker_default"], {
-      stdio: "inherit",
+    const proc = spawn("docker", ["network", "rm", networkName], {
+      stdio: ["ignore", "ignore", "ignore"], // Suppress output - network may not exist
     });
 
     proc.on("close", () => {
