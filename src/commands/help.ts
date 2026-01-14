@@ -36,6 +36,7 @@ PRD LIST OPTIONS:
                              Valid: ui, feature, bugfix, setup, development, testing, docs
   --passes                   Show only completed items (passes=true)
   --no-passes                Show only incomplete items (passes=false)
+  --stats                    Show statistics instead of entries
 
 EXAMPLES:
   ralph init                 # Initialize ralph (language selection only)
@@ -53,6 +54,8 @@ EXAMPLES:
   ralph prd list -c feature  # Show only feature entries
   ralph prd list --passes    # Show only completed entries
   ralph prd list --no-passes # Show only incomplete entries
+  ralph prd list --stats     # Show statistics with progress bar
+  ralph prd list -c feature --stats  # Stats for feature category only
   ralph prd status           # Show completion summary
   ralph prompt               # Display resolved prompt
   ralph prompt --raw         # Display template with $variables

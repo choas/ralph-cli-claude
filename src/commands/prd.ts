@@ -69,7 +69,7 @@ async function add(): Promise<void> {
   console.log(`\nAdded entry #${prd.length}: "${description}"`);
 }
 
-function list(category?: string, passesFilter?: boolean): void {
+function list(category?: string, passesFilter?: boolean, showStats?: boolean): void {
   const prd = loadPrd();
 
   if (prd.length === 0) {
@@ -96,6 +96,51 @@ function list(category?: string, passesFilter?: boolean): void {
     if (passesFilter === true) filters.push("passes=true");
     if (passesFilter === false) filters.push("passes=false");
     console.log(`No PRD entries found matching: ${filters.join(", ")}.`);
+    return;
+  }
+
+  // Show stats if requested
+  if (showStats) {
+    const total = filteredPrd.length;
+    const passing = filteredPrd.filter(({ entry }) => entry.passes).length;
+    const failing = total - passing;
+    const percentage = Math.round((passing / total) * 100);
+
+    // Build filter description for header
+    const filterParts: string[] = [];
+    if (category) filterParts.push(`category: ${category}`);
+    if (passesFilter === true) filterParts.push("passing only");
+    if (passesFilter === false) filterParts.push("incomplete only");
+    const filterDesc = filterParts.length > 0 ? ` (${filterParts.join(", ")})` : "";
+
+    console.log(`\nPRD Statistics${filterDesc}:\n`);
+    console.log(`  Total items:  ${total}`);
+    console.log(`  Passing:      \x1b[32m${passing}\x1b[0m`);
+    console.log(`  Failing:      \x1b[33m${failing}\x1b[0m`);
+    console.log(`  Completion:   ${percentage}%`);
+
+    // Progress bar
+    const barWidth = 30;
+    const filled = Math.round((passing / total) * barWidth);
+    const bar = "\x1b[32m" + "\u2588".repeat(filled) + "\x1b[0m" + "\u2591".repeat(barWidth - filled);
+    console.log(`\n  [${bar}]\n`);
+
+    // By category breakdown
+    const byCategory: Record<string, { pass: number; total: number }> = {};
+    filteredPrd.forEach(({ entry }) => {
+      if (!byCategory[entry.category]) {
+        byCategory[entry.category] = { pass: 0, total: 0 };
+      }
+      byCategory[entry.category].total++;
+      if (entry.passes) byCategory[entry.category].pass++;
+    });
+
+    console.log("  By category:");
+    Object.entries(byCategory).forEach(([cat, stats]) => {
+      const catPct = Math.round((stats.pass / stats.total) * 100);
+      console.log(`    ${cat}: ${stats.pass}/${stats.total} (${catPct}%)`);
+    });
+    console.log();
     return;
   }
 
@@ -246,9 +291,10 @@ function clean(): void {
   console.log(`${filtered.length} ${filtered.length === 1 ? "entry" : "entries"} remaining.`);
 }
 
-function parseListArgs(args: string[]): { category?: string; passesFilter?: boolean } {
+function parseListArgs(args: string[]): { category?: string; passesFilter?: boolean; showStats?: boolean } {
   let category: string | undefined;
   let passesFilter: boolean | undefined;
+  let showStats: boolean | undefined;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--category" || args[i] === "-c") {
@@ -264,6 +310,8 @@ function parseListArgs(args: string[]): { category?: string; passesFilter?: bool
       passesFilter = true;
     } else if (args[i] === "--no-passes") {
       passesFilter = false;
+    } else if (args[i] === "--stats") {
+      showStats = true;
     }
   }
 
@@ -274,7 +322,7 @@ function parseListArgs(args: string[]): { category?: string; passesFilter?: bool
     process.exit(1);
   }
 
-  return { category, passesFilter };
+  return { category, passesFilter, showStats };
 }
 
 export async function prd(args: string[]): Promise<void> {
@@ -285,8 +333,8 @@ export async function prd(args: string[]): Promise<void> {
       await add();
       break;
     case "list": {
-      const { category, passesFilter } = parseListArgs(args.slice(1));
-      list(category, passesFilter);
+      const { category, passesFilter, showStats } = parseListArgs(args.slice(1));
+      list(category, passesFilter, showStats);
       break;
     }
     case "status":
@@ -311,6 +359,7 @@ export async function prd(args: string[]): Promise<void> {
       console.error("  --category, -c <cat>        Filter by category");
       console.error("  --passes                    Show only completed items");
       console.error("  --no-passes                 Show only incomplete items");
+      console.error("  --stats                     Show statistics instead of entries");
       console.error(`\nValid categories: ${CATEGORIES.join(", ")}`);
       process.exit(1);
   }
