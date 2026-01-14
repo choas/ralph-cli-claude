@@ -34,6 +34,8 @@ PRD SUBCOMMANDS:
 PRD LIST OPTIONS:
   --category, -c <category>  Filter PRD items by category
                              Valid: ui, feature, bugfix, setup, development, testing, docs
+  --passes                   Show only completed items (passes=true)
+  --no-passes                Show only incomplete items (passes=false)
 
 EXAMPLES:
   ralph init                 # Initialize ralph (language selection only)
@@ -49,6 +51,8 @@ EXAMPLES:
   ralph prd add              # Add new PRD entry
   ralph prd list             # Show all entries
   ralph prd list -c feature  # Show only feature entries
+  ralph prd list --passes    # Show only completed entries
+  ralph prd list --no-passes # Show only incomplete entries
   ralph prd status           # Show completion summary
   ralph prompt               # Display resolved prompt
   ralph prompt --raw         # Display template with $variables

@@ -69,7 +69,7 @@ async function add(): Promise<void> {
   console.log(`\nAdded entry #${prd.length}: "${description}"`);
 }
 
-function list(category?: string): void {
+function list(category?: string, passesFilter?: boolean): void {
   const prd = loadPrd();
 
   if (prd.length === 0) {
@@ -77,18 +77,36 @@ function list(category?: string): void {
     return;
   }
 
+  // Build filtered list, preserving original indices
+  let filteredPrd = prd.map((entry, i) => ({ entry, originalIndex: i }));
+
   // Filter by category if specified
-  const filteredPrd = category
-    ? prd.map((entry, i) => ({ entry, originalIndex: i })).filter(({ entry }) => entry.category === category)
-    : prd.map((entry, i) => ({ entry, originalIndex: i }));
+  if (category) {
+    filteredPrd = filteredPrd.filter(({ entry }) => entry.category === category);
+  }
+
+  // Filter by passes status if specified
+  if (passesFilter !== undefined) {
+    filteredPrd = filteredPrd.filter(({ entry }) => entry.passes === passesFilter);
+  }
 
   if (filteredPrd.length === 0) {
-    console.log(`No PRD entries found for category "${category}".`);
+    const filters: string[] = [];
+    if (category) filters.push(`category "${category}"`);
+    if (passesFilter === true) filters.push("passes=true");
+    if (passesFilter === false) filters.push("passes=false");
+    console.log(`No PRD entries found matching: ${filters.join(", ")}.`);
     return;
   }
 
-  if (category) {
-    console.log(`\nPRD Entries (category: ${category}):\n`);
+  // Build header
+  const filters: string[] = [];
+  if (category) filters.push(`category: ${category}`);
+  if (passesFilter === true) filters.push("passing only");
+  if (passesFilter === false) filters.push("incomplete only");
+
+  if (filters.length > 0) {
+    console.log(`\nPRD Entries (${filters.join(", ")}):\n`);
   } else {
     console.log("\nPRD Entries:\n");
   }
@@ -228,8 +246,9 @@ function clean(): void {
   console.log(`${filtered.length} ${filtered.length === 1 ? "entry" : "entries"} remaining.`);
 }
 
-function parseListArgs(args: string[]): { category?: string } {
+function parseListArgs(args: string[]): { category?: string; passesFilter?: boolean } {
   let category: string | undefined;
+  let passesFilter: boolean | undefined;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--category" || args[i] === "-c") {
@@ -241,6 +260,10 @@ function parseListArgs(args: string[]): { category?: string } {
         console.error(`Valid categories: ${CATEGORIES.join(", ")}`);
         process.exit(1);
       }
+    } else if (args[i] === "--passes") {
+      passesFilter = true;
+    } else if (args[i] === "--no-passes") {
+      passesFilter = false;
     }
   }
 
@@ -251,7 +274,7 @@ function parseListArgs(args: string[]): { category?: string } {
     process.exit(1);
   }
 
-  return { category };
+  return { category, passesFilter };
 }
 
 export async function prd(args: string[]): Promise<void> {
@@ -262,8 +285,8 @@ export async function prd(args: string[]): Promise<void> {
       await add();
       break;
     case "list": {
-      const { category } = parseListArgs(args.slice(1));
-      list(category);
+      const { category, passesFilter } = parseListArgs(args.slice(1));
+      list(category, passesFilter);
       break;
     }
     case "status":
@@ -279,11 +302,15 @@ export async function prd(args: string[]): Promise<void> {
       console.error("Usage: ralph prd <add|list|status|toggle|clean>");
       console.error("\nSubcommands:");
       console.error("  add                         Add a new PRD entry");
-      console.error("  list [--category <cat>]     List all PRD entries (optionally filter by category)");
+      console.error("  list [options]              List all PRD entries");
       console.error("  status                      Show completion status");
       console.error("  toggle <n> ...              Toggle passes status for entry n (accepts multiple)");
       console.error("  toggle --all                Toggle all PRD entries");
       console.error("  clean                       Remove all passing entries from the PRD");
+      console.error("\nList options:");
+      console.error("  --category, -c <cat>        Filter by category");
+      console.error("  --passes                    Show only completed items");
+      console.error("  --no-passes                 Show only incomplete items");
       console.error(`\nValid categories: ${CATEGORIES.join(", ")}`);
       process.exit(1);
   }
