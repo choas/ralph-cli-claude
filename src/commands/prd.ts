@@ -103,7 +103,7 @@ function list(category?: string, passesFilter?: boolean, showStats?: boolean): v
   if (showStats) {
     const total = filteredPrd.length;
     const passing = filteredPrd.filter(({ entry }) => entry.passes).length;
-    const failing = total - passing;
+    const incomplete = total - passing;
     const percentage = Math.round((passing / total) * 100);
 
     // Build filter description for header
@@ -116,7 +116,7 @@ function list(category?: string, passesFilter?: boolean, showStats?: boolean): v
     console.log(`\nPRD Statistics${filterDesc}:\n`);
     console.log(`  Total items:  ${total}`);
     console.log(`  Passing:      \x1b[32m${passing}\x1b[0m`);
-    console.log(`  Failing:      \x1b[33m${failing}\x1b[0m`);
+    console.log(`  Incomplete:   \x1b[33m${incomplete}\x1b[0m`);
     console.log(`  Completion:   ${percentage}%`);
 
     // Progress bar
